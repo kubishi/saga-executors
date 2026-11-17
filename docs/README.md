@@ -1,8 +1,8 @@
 # docs/
 
-- `formats.md` — DRAFT proposal for shared formats (instance, machines.yaml,
-  prediction/actual) and the full list of current divergences between the two
-  backends (open questions).
+- `formats.md` — architecture (one SAGA path through Wayline's bridge), shared
+  formats (instance, machines.yaml, prediction/actual, enact_order), legacy vs
+  bridge, the SAGA-version blocker, and the remaining open questions.
 - Backend docs: `src/saga_exec/backends/wayline/README.md` (Nick's original fidelity README),
   `testbed/k8s/README.md`, `testbed/slurm/README.md` (Sebastian's original README).
 

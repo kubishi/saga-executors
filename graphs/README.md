@@ -14,9 +14,11 @@ Format: Nick's instance JSON (see `docs/formats.md`, "Instance"; loader
 
 Caveats (see open questions in `docs/formats.md`):
 
-- Units differ: Nick's sizes are bytes (with `bytes_per_size`) and costs seconds
-  (with `sec_per_cost`); Sebastian's costs are "saga time units" multiplied by
-  `time_scale`, and sizes are divided by the run file's `bandwidth` in the same units.
+- Units: both backends now map costs to seconds with `sec_per_cost` and sizes to
+  bytes with `bytes_per_size` before scheduling. Sebastian's graphs were written
+  for `time_scale` and an abstract `bandwidth`; his converted run files set
+  `sec_per_cost` = old `time_scale` (and, for transfer_test, `bytes_per_size` so the
+  old transfer times are kept at the measured bandwidth).
 - Sebastian's task names are upper case (`A`, `T1`), which are **not** valid
   Kubernetes names, so the Wayline backend rejects them as-is.
-- The backends do not read `slurm-*.json`; the Slurm backend still reads its run files.
+- The Slurm run files (`experiments/slurm/runs/`) reference `slurm-*.json` via `"instance"`.

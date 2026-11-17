@@ -7,9 +7,9 @@ registry `cse-lambda1:5000`) and **cse-isha** (worker). Set up by Nick Laus.
 
 | Piece | Where it runs | Needs |
 |---|---|---|
-| `convert.py` (+ `experiments/wayline/generate.py`) | anywhere | this package only (anrg-saga, pyyaml). No cluster. |
-| `run.py` | cse-lambda1 | **`kubectl`** on PATH with a kubeconfig for the cluster, Wayline's CRDs (`ODAGTemplate`, `ODAG`, group `wl.io/v1`) and controller deployed, namespace `wl-runs`. It does **not** use the `wl`/`wayline` CLI binary or the Wayline Python SDK: it reimplements `wayline run` by creating an `ODAG` from the template with `kubectl create`. |
-| `analyze.py` | anywhere | this package (matplotlib, `saga.utils.draw`). Reads saved `status.json`. |
+| `convert.py` (+ `experiments/wayline/generate.py`) | anywhere | this package only (incl. Wayline's bridge, `wl-saga-sidecar`, for the offline prediction). No cluster. |
+| `run.py` | cse-lambda1 | **`kubectl`** on PATH with a kubeconfig for the cluster, Wayline's CRDs (`ODAGTemplate`, `ODAG`, group `wl.io/v1`) and controller deployed **from Wayline branch `saga-executor`** (records SAGA's prediction in `status.scheduling`) **with a working `saga-sidecar` container** (built from the same SAGA as `uv.lock`; the `cse-lambda1:5000` registry has no `wl-saga-sidecar` image as of 2026-11-17), namespace `wl-runs`. Applies each folder's `network-profile.yml` (ConfigMap `wl-system/wl-network-profile`, from `machines.yaml`). It does **not** use the `wl`/`wayline` CLI binary or the Wayline Python SDK: it reimplements `wayline run` by creating an `ODAG` from the template with `kubectl create`. |
+| `analyze.py` | anywhere | this package (matplotlib, `saga.utils.draw`). Reads saved `status.json`: SAGA's prediction from `status.scheduling`, measured times from the SDK. |
 | `task/task.py` | inside pods | Wayline Python SDK `wl` (`sdk/python/wl` in the Wayline repo, needs `pyzmq`), baked into the image `cse-lambda1:5000/wl-fidelity-task:latest` (see `task/Dockerfile`). |
 
 So the Python SDK is **not** a dependency of `saga-executors`; it is only
@@ -40,7 +40,8 @@ checked (that would require querying the cluster).
 - `wayline-deployments/wl-runs-namespace.yml` — namespace `wl-runs` (privileged PSA) used by the templates.
 - `wayline-deployments/network-profile-configmap.yml` — `wl-network-profile` with the iperf3
   bandwidths measured 2026-10-27 (lambda1->isha 117000000 B/s, isha->lambda1 117625000 B/s).
-  Must match `testbed/machines.yaml` and `BANDWIDTH` in `backends/wayline/convert.py`.
+  Now generated from `testbed/machines.yaml` as `network-profile.yml` in each converted
+  folder (and applied by `run.py`); this copy is the lab's original.
 - `wayline-lab.diff` — full `git diff origin/main...lab -- deployments examples` from the fork:
   the two files above plus image registry `192.168.1.163:5000` -> `cse-lambda1:5000` and
   nodeSelector `anrg-2` -> `cse-lambda1` for odag-controller, ui-server, data-agent,

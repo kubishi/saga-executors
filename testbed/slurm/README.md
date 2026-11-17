@@ -2,7 +2,15 @@
      @ e4f6de2b5546fe54060c4f19bfc3d417fcdd1312. Paths in "Usage" refer to that repo:
      executor/saga_slurm.py is now `uv run saga-slurm` (saga_exec/backends/slurm),
      runs/ is now experiments/slurm/runs/. slurm.conf and cgroup.conf are also
-     extracted next to this file. -->
+     extracted next to this file.
+     CHANGED SINCE: SAGA scheduling now goes through Wayline's bridge
+     (saga_exec.scheduling). The run-file format below is the ORIGINAL one; run files
+     now give "instance" (graphs/*.json) + settings, "time_scale" -> "sec_per_cost",
+     "nodes" -> "speed", "strict_order" -> "enact_order" ("order" | "none"; same
+     start order per machine as Wayline), and machines, cores (14 per machine) and
+     bandwidth come from testbed/machines.yaml. See RUN_DEFAULTS in
+     src/saga_exec/backends/slurm/saga_slurm.py, experiments/slurm/README.md and
+     docs/formats.md. The original code is in src/saga_exec/legacy/slurm_saga.py. -->
 
 # saga-slurm
 

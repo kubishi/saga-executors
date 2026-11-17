@@ -9,7 +9,8 @@ Suggested layout: `results/<backend>/<graph>/<run name>/...`
 `examples/` holds small, curated outputs imported from the students' original
 repos so the formats can be inspected without a cluster:
 
-- `examples/wayline/smoke-diamond/` — Nick's smoke run (HEFT and CPOP, C=8, sleep mode):
+- `examples/wayline/smoke-diamond/` — Nick's smoke run (HEFT and CPOP, C=8, sleep mode;
+  LEGACY model: SAGA offline on core-nodes, reproduced by `saga_exec.legacy.wayline_convert`):
   `prediction.json`, `config.json`, `instance.json`, `template.yml` and one run's
   `status.json`, `logs.txt`, `actual.json`, `gantt.png`; plus `run-log.csv`.
 - `examples/slurm/` — Sebastian's `test_runs.csv` / `test_summary.csv`
