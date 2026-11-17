@@ -1,14 +1,18 @@
 """Wayline (Kubernetes) backend (owner: Nick Laus).
 
-Imported as-is from Nick's Wayline fork (github.com/nick23447/wayline, branch
-`lab`, eval/experiments/fidelity/) at aff6fa8a698c1ca2cda6ecd6bb10948ef54df5a8;
-only imports, paths and usage strings were changed. See README.md in this folder
-(Nick's original) and testbed/k8s/README.md.
+SAGA runs inside the cluster: templates ask for spec.scheduler "saga/<alg>", the
+controller sends the problem to the saga-sidecar (Wayline's bridge), enacts the
+placement (and, with enact_order "order", the per-machine start order) and
+records SAGA's prediction in status.scheduling. This backend only builds the
+template, runs it and measures it:
 
-  convert.py   instance + Config -> SAGA schedule, prediction.json, ODAGTemplate (offline)
-  run.py       applies templates with kubectl, waits, saves status/logs, calls analyze
-  analyze.py   status.json -> actual.json + gantt.png
+  convert.py   instance + Config -> template.yml, network-profile.yml, request.json,
+               offline bridge prediction.json (no cluster)
+  run.py       applies them with kubectl, waits, saves status/logs, calls analyze
+  analyze.py   status.json -> in-cluster prediction.json (rejects fallback runs),
+               actual.json, gantt.png
 
-The task program run inside each pod is task/ at the repo root (needs the
-Wayline python SDK `wl`, baked into the image; not a dependency of this package).
+Nick's original converter (SAGA offline on core-nodes, placement pinned) is
+saga_exec.legacy.wayline_convert. The task program run inside each pod is task/
+at the repo root (needs the Wayline python SDK `wl`, baked into the image).
 """

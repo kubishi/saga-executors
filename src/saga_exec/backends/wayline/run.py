@@ -4,19 +4,25 @@
 Runs on lambda1 (needs kubectl and the venv). For each template folder made by
 convert() (results/wayline/<graph>/<run name>/) and each repetition:
 
-  1. apply template.yml (so `wayline runs` lists the runs too)
+  1. apply network-profile.yml (the wl-network-profile ConfigMap from machines.yaml,
+     so SAGA sees the bandwidths the offline prediction used) and template.yml
   2. start a run (ODAG) from it, the way `wayline run` does
   3. wait until it succeeds or fails, and until every task has its SDK times
   4. save runs/<odag>/status.json and runs/<odag>/logs.txt
   5. delete the run and wait for its pods to go (Wayline does not clean up
      when profiling is off)
-  6. analyze it: runs/<odag>/actual.json and gantt.png
+  6. analyze it: runs/<odag>/prediction.json (SAGA's, from status.scheduling),
+     actual.json and gantt.png. A run SAGA did not place (the controller fell
+     back to random placement) is logged as "Rejected" and not analyzed.
+
+The cluster must run Wayline's controller from branch saga-executor (it records
+SAGA's per-task prediction in status.scheduling) with a working saga-sidecar.
 
 Each run adds one line to <out>/run-log.csv (default results/wayline/, relative to
 the working directory; set SAGA_EXEC_WAYLINE_OUT to change it).
 
 Usage (from the repo root):
-  uv run saga-wayline-run results/wayline/smoke-diamond/heft-c8-sleep-a5faff [more folders] [--reps 20] [--shuffle SEED]
+  uv run saga-wayline-run results/wayline/smoke-diamond/heft-order-sleep-119bea [more folders] [--reps 20] [--shuffle SEED]
 (originally, from fidelity/: python run.py out/smoke-diamond/heft-c8-sleep-a5faff ...)
 
 --shuffle runs all (template, repetition) pairs in a random order, so slow
@@ -128,8 +134,11 @@ def delete_run(name: str, namespace: str) -> None:
 
 def log_row(row: dict) -> None:
     LOG.parent.mkdir(parents=True, exist_ok=True)
-    new = not LOG.exists()
-    with LOG.open("a", newline="") as f:
+    log = LOG
+    if log.exists() and log.read_text().split("\n", 1)[0] != ",".join(row):
+        log = LOG.with_name("run-log.v2.csv")   # columns changed with the bridge workflow
+    new = not log.exists()
+    with log.open("a", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(row))
         if new:
             writer.writeheader()
@@ -139,19 +148,23 @@ def log_row(row: dict) -> None:
 def run_one(template_dir: Path, rep: int, seed: int | None) -> None:
     template = yaml.safe_load((template_dir / "template.yml").read_text())
     namespace = template["metadata"]["namespace"]
-    predicted = json.loads((template_dir / "prediction.json").read_text())["makespan"]
+    offline = template_dir / "prediction.json"   # absent if the bridge could not run offline
+    predicted = json.loads(offline.read_text())["makespan"] if offline.exists() else None
 
     busy = unfinished_runs(namespace)
     if busy:
         raise SystemExit(f"runs still active in {namespace}: {busy}. Runs must go one at a time; "
                          "wait for them or delete them, then start again.")
 
+    if (template_dir / "network-profile.yml").exists():
+        kubectl("apply", "-f", str(template_dir / "network-profile.yml"))
     kubectl("apply", "-f", str(template_dir / "template.yml"))
     name = start_run(template)
-    print(f"  {name}: started (predicted {predicted:.3f} s)")
+    print(f"  {name}: started (offline prediction "
+          f"{'none' if predicted is None else f'{predicted:.3f} s'})")
     try:
         status = wait_for(name, namespace, len(template["spec"]["tasks"]),
-                          timeout=120 + 10 * predicted)
+                          timeout=120 + 10 * (predicted or 60))
     except KeyboardInterrupt:
         print(f"\nstopped: {name} is still in the cluster; save and delete it by hand")
         raise
@@ -166,11 +179,17 @@ def run_one(template_dir: Path, rep: int, seed: int | None) -> None:
     save_logs(name, namespace, run_dir / "logs.txt")
     delete_run(name, namespace)
 
-    makespan = ""
+    makespan, saga_makespan, same = "", "", ""
+    scheduling = status.get("status", {}).get("scheduling") or {}
     if phase == "Succeeded":
         try:
-            analyze.analyze(run_dir / "status.json")
+            comparison = analyze.analyze(run_dir / "status.json")
             makespan = json.loads((run_dir / "actual.json").read_text())["makespan"]
+            saga_makespan = json.loads((run_dir / "prediction.json").read_text())["makespan"]
+            same = comparison.get("same_schedule", "")
+        except analyze.RejectedRun as e:
+            phase = "Rejected"
+            print(f"  {e}")
         except Exception as e:   # keep going: status.json is saved, analyze can be rerun
             print(f"  analyze failed: {e}")
     else:
@@ -182,7 +201,10 @@ def run_one(template_dir: Path, rep: int, seed: int | None) -> None:
         "rep": rep,
         "run": name,
         "phase": phase,
-        "predicted": predicted,
+        "placed_by": scheduling.get("used", ""),
+        "predicted": saga_makespan,
+        "offline_predicted": "" if predicted is None else predicted,
+        "same_as_offline": same,
         "makespan": makespan,
         "shuffle_seed": "" if seed is None else seed,
     })

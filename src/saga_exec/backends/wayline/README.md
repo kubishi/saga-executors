@@ -6,11 +6,21 @@
        task/                          -> task/ (repo root; see its Dockerfile for the new build command)
        out/                           -> results/wayline/ (gitignored; examples in results/examples/wayline/)
      Commands:
-       PYTHONHASHSEED=0 uv run python experiments/wayline/generate.py
+       uv run python experiments/wayline/generate.py
        uv run saga-wayline-run results/wayline/<graph>/<run name> --reps 20 --shuffle 1
        uv run saga-wayline-analyze results/wayline/<graph>/<run name>/runs/<odag>/status.json
      The plan referenced below (fidelity-plan/main.tex) was not found on this machine;
-     see docs/README.md. -->
+     see docs/README.md.
+     CHANGED SINCE: SAGA now runs in the cluster through Wayline's saga-sidecar
+     (spec.scheduler saga/<alg>, enactOrder from Config.enact_order, nothing pinned;
+     schedulerConfig.model asks the bridge for C core-nodes "<machine>/c<i>" per
+     machine, as before, plus explicit self/intra-machine link speeds);
+     convert.py writes the template, the wl-network-profile ConfigMap, the bridge
+     request and an offline bridge prediction; analyze.py reads SAGA's prediction
+     from status.scheduling and rejects runs that fell back to random placement.
+     Config.C is now Config.model.cores (default: testbed/machines.yaml). The converter described
+     below is src/saga_exec/legacy/wayline_convert.py. PYTHONHASHSEED is set by the
+     bridge runner. See docs/formats.md. -->
 
 # Fidelity: how well does SAGA's model predict Wayline?
 
