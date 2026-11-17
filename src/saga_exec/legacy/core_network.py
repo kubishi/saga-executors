@@ -1,14 +1,11 @@
-"""Shared network builder (DRAFT).
+"""LEGACY: per-core SAGA network (the students' shared model, as a draft builder).
 
-Both backends model a machine with C cores as C SAGA nodes, free links between
-cores of one machine and measured bandwidth across machines. They differ in
-details (docs/formats.md, "Open questions"); this builder makes those choices
-explicit parameters so both could use it:
-
-    TODO(wayline): replace backends/wayline/convert.py:build_network
-                   (sep="-", local_bandwidth=1e12, bandwidth from machines.yaml)
-    TODO(slurm):   replace backends/slurm/saga_slurm.py:build_network
-                   (sep=":", local_bandwidth=inf, one run-file bandwidth for all links)
+Was saga_exec.network. Both students modelled a machine with C cores as C SAGA
+nodes, free links between cores of one machine and measured bandwidth across
+machines. SAGA scheduling now goes through Wayline's bridge, which models a
+machine as ONE SAGA node with capacity = free cores (saga_exec.scheduling);
+this module is kept for the legacy-vs-bridge comparison
+(tests/test_legacy_vs_bridge.py). Testbed loading moved to saga_exec.testbed.
 """
 
 from __future__ import annotations

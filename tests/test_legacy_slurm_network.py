@@ -1,4 +1,4 @@
-"""Tests for build_network in saga_exec/backends/slurm/saga_slurm.py.
+"""Tests for Sebastian's LEGACY build_network (saga_exec/legacy/slurm_saga.py).
 
 How pytest works: it finds files named test_*.py, runs every function named
 test_*, and a test fails if any `assert` in it is false (or it crashes).
@@ -6,14 +6,15 @@ test_*, and a test fails if any `assert` in it is false (or it crashes).
 Run from the repo root:
     uv run pytest tests/test_slurm_network.py        # add -v to see each test's name
 
-(Moved from executor/test_network.py in Sebastian's slurm-cluster repo.)
+(Moved from executor/test_network.py in Sebastian's slurm-cluster repo. The Slurm
+backend now schedules through Wayline's bridge; see test_slurm.py.)
 """
 
 from types import SimpleNamespace
 
 import pytest
 
-from saga_exec.backends.slurm.saga_slurm import build_network
+from saga_exec.legacy.slurm_saga import build_network
 
 
 def test_one_node_per_core():

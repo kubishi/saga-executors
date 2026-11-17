@@ -1,7 +1,7 @@
-"""Wayline backend, offline: no kubectl, no cluster.
+"""Nick's LEGACY Wayline converter (saga_exec.legacy.wayline_convert), offline.
 
-- convert() on graphs/smoke.json reproduces Nick's committed prediction/template.
-- analyze.actual_from_status() reproduces the committed actual.json from status.json.
+convert() on graphs/smoke.json reproduces Nick's committed prediction/template in
+results/examples/wayline/ (made with the legacy converter, SAGA on core-nodes).
 """
 
 import json
@@ -13,8 +13,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from saga_exec.backends.wayline import analyze, run  # noqa: F401  (run: import must not need kubectl)
-from saga_exec.backends.wayline.convert import Config, convert
+from saga_exec.legacy.wayline_convert import Config, convert
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "results" / "examples" / "wayline" / "smoke-diamond"
@@ -42,7 +41,7 @@ def test_convert_smoke_reproduces_example_exactly(tmp_path):
     """With PYTHONHASHSEED=0 (as Nick's README prescribes) the output is byte-identical."""
     code = (
         "import sys; from pathlib import Path\n"
-        "from saga_exec.backends.wayline.convert import Config, convert\n"
+        "from saga_exec.legacy.wayline_convert import Config, convert\n"
         "for s in ('heft', 'cpop'):\n"
         "    convert(Path(sys.argv[1]), Config(scheduler=s, C=8), Path(sys.argv[2]))\n"
     )
@@ -55,16 +54,3 @@ def test_convert_smoke_reproduces_example_exactly(tmp_path):
         got = tmp_path / "smoke-diamond" / expected.name
         for f in ("prediction.json", "template.yml", "config.json", "instance.json"):
             assert (got / f).read_text() == (expected / f).read_text(), f"{expected.name}/{f}"
-
-
-def test_analyze_reproduces_actual_json():
-    status_paths = sorted(EXAMPLES.glob("*/runs/*/status.json"))
-    assert status_paths
-    for status_path in status_paths:
-        actual = analyze.actual_from_status(json.loads(status_path.read_text()))
-        expected = json.loads((status_path.parent / "actual.json").read_text())
-        assert actual["tasks"].keys() == expected["tasks"].keys()
-        assert actual["makespan"] == pytest.approx(expected["makespan"])
-        for name, t in expected["tasks"].items():
-            assert actual["tasks"][name]["start"] == pytest.approx(t["start"])
-            assert actual["tasks"][name]["end"] == pytest.approx(t["end"])
