@@ -1,0 +1,8 @@
+{
+  "scheduler": "heft",
+  "time_scale": 1,
+  "bandwidth": 1,
+  "nodes": {"cse-lambda1": 1.0, "cse-isha": 0.5},
+  "tasks": {"A": 2, "B": 6, "C": 2, "D": 2},
+  "dependencies": [["A", "B", 3.0], ["A", "C", 3.0], ["B", "D"], ["C", "D"]]
+}

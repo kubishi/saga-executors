@@ -1,0 +1,6 @@
+{
+  "scheduler": "heft",
+  "time_scale": 3,
+  "nodes": {"cse-lambda1": 1.0, "cse-isha": 0.5},
+  "graph": {"shape": "branching", "seed": 0}
+}

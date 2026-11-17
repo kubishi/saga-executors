@@ -1,0 +1,7 @@
+{
+  "scheduler": "cpop",
+  "time_scale": 1,
+  "nodes": {"cse-lambda1": 1.0, "cse-isha": 1.0},
+  "tasks": {"A": 5, "B": 3, "C": 4, "D": 2},
+  "dependencies": [["A", "B"], ["A", "C"], ["B", "D"], ["C", "D"]]
+}

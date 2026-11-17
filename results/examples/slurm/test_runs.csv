@@ -1,0 +1,16 @@
+graph,run_id,tasks,machines_used,handoffs_to_end,chain_to_end,predicted_s,actual_s,error_s,error_per_handoff_s,mean_handoff_all_tasks_s,worst_sleep_error_s,all_completed,right_machine,right_order
+chain,20261105-105334,4,1,3,A > B > C > D,8.432,8.636,0.204,0.068,0.063,0.0039,True,True,True
+diamond,20261105-105345,4,2,2,A > B > D,8.239,8.406,0.167,0.084,0.074,0.006,True,True,True
+fork,20261105-105356,6,2,3,A > B > D > F,10.352,10.601,0.249,0.083,0.073,0.0055,True,True,True
+branching,20261105-105409,8,2,3,0 > 1 > 5 > 7,11.16,11.417,0.258,0.086,0.071,0.0055,True,True,True
+transfer_test,20261105-105423,4,2,2,A > C > D,11.0,11.17,0.17,0.085,0.079,0.0058,True,True,True
+chain,20261105-105437,4,1,3,A > B > C > D,8.432,8.674,0.242,0.081,0.076,0.0039,True,True,True
+diamond,20261105-105450,4,2,2,A > B > D,8.239,8.411,0.171,0.086,0.072,0.0054,True,True,True
+fork,20261105-105501,6,2,3,A > B > D > F,10.352,10.601,0.249,0.083,0.073,0.0055,True,True,True
+branching,20261105-105515,8,2,3,0 > 1 > 5 > 7,11.16,11.408,0.249,0.083,0.068,0.0054,True,True,True
+transfer_test,20261105-105528,4,2,2,A > C > D,11.0,11.167,0.167,0.084,0.077,0.0047,True,True,True
+chain,20261105-105542,4,1,3,A > B > C > D,8.432,8.643,0.211,0.07,0.066,0.004,True,True,True
+diamond,20261105-105554,4,2,2,A > B > D,8.239,8.412,0.173,0.087,0.079,0.0054,True,True,True
+fork,20261105-105605,6,2,3,A > B > D > F,10.352,10.601,0.249,0.083,0.07,0.0053,True,True,True
+branching,20261105-105620,8,2,5,0 > 2 > 6 > 3 > 4 > 7,11.16,11.416,0.256,0.051,0.072,0.0064,True,True,True
+transfer_test,20261105-105634,4,2,2,A > C > D,11.0,11.169,0.169,0.084,0.079,0.0058,True,True,True

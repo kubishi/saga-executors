@@ -1,0 +1,6 @@
+graph,runs,tasks,machines_used,handoffs_to_end,predicted_s,mean_actual_s,mean_error_s,min_error_s,max_error_s,error_per_handoff_s,worst_sleep_error_s,all_checks_passed,note
+chain,3,4,1,3,8.432,8.651,0.219,0.204,0.242,0.073,0.004,True,
+diamond,3,4,2,2,8.239,8.41,0.17,0.167,0.173,0.085,0.006,True,
+fork,3,6,2,3,10.352,10.601,0.249,0.249,0.249,0.083,0.0055,True,
+branching,3,8,2,3 or 5,11.16,11.414,0.254,0.249,0.258,0.084,0.0064,True,Per-handoff figure uses the 3-handoff runs only; excludes 1 run(s) with 5 handoffs
+transfer_test,3,4,2,2,11.0,11.169,0.169,0.167,0.17,0.084,0.0058,True,
