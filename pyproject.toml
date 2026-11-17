@@ -25,7 +25,6 @@ wayline = []
 slurm = []
 
 [project.scripts]
-saga-wayline-generate = "saga_exec.backends.wayline.generate:main"
 saga-wayline-run = "saga_exec.backends.wayline.run:main"
 saga-wayline-analyze = "saga_exec.backends.wayline.analyze:main"
 saga-slurm = "saga_exec.backends.slurm.saga_slurm:main"
