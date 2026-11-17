@@ -10,6 +10,7 @@ Everything SAGA learns about the hardware comes from here, for both backends:
     tb.partition("k8s").cores            # SAGA cores (one task at a time) per machine
     tb.partition("k8s").cpu_millis       # node CPU as the controller reports it
     tb.partition("slurm").task_cpu       # default per-task CPU request ("1")
+    tb.hash_rate("slurm")                # calibrated FID_HASH_RATE (sha256/s of a speed-1.0 slot) or None
 """
 
 from __future__ import annotations
@@ -42,6 +43,13 @@ class Testbed:
     partitions: dict[str, Partition] = field(default_factory=dict)
     self_bandwidth: dict[str, float] = field(default_factory=dict)    # same core, bytes/s
     intra_bandwidth: dict[str, float] = field(default_factory=dict)   # core to core, bytes/s
+    calibration: dict = field(default_factory=dict, compare=False)    # machines.yaml "calibration"
+
+    def hash_rate(self, backend: str) -> float | None:
+        """cpu mode's FID_HASH_RATE for a backend: calibration.cpu.<backend>.hash_rate
+        (written by saga_exec.calibrate.cpu), None if not calibrated."""
+        value = ((self.calibration.get("cpu") or {}).get(backend) or {}).get("hash_rate")
+        return float(value) if value else None
 
     def bandwidth_between(self, src: str, dst: str) -> float:
         """Directed link src -> dst, as Wayline's "external" bandwidth source resolves it."""
@@ -80,4 +88,4 @@ def load_testbed(path: str | Path = DEFAULT_MACHINES_YAML) -> Testbed:
     return Testbed(machines=machines, speed=speed, bandwidth=bw,
                    default_bandwidth=float(net.get("default_bandwidth", DEFAULT_BANDWIDTH)),
                    partitions=partitions, self_bandwidth=local["self_bandwidth"],
-                   intra_bandwidth=local["intra_bandwidth"])
+                   intra_bandwidth=local["intra_bandwidth"], calibration=d.get("calibration") or {})

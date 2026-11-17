@@ -1,10 +1,15 @@
 # docs/
 
+- `data-movement.md` — how data moves on each backend (Wayline's data agent;
+  Slurm's `direct` and `shared_fs` transports), which timing phase each cost lands
+  in, and the task env contract.
 - `formats.md` — architecture (one SAGA path through Wayline's bridge), shared
   formats (instance, machines.yaml, prediction/actual, enact_order), legacy vs
   bridge, the SAGA-version blocker, and the remaining open questions.
 - Backend docs: `src/saga_exec/backends/wayline/README.md` (Nick's original fidelity README),
-  `testbed/k8s/README.md`, `testbed/slurm/README.md` (Sebastian's original README).
+  `testbed/k8s/README.md`, `testbed/slurm/README.md` (Sebastian's original README),
+  `testbed/slurm/task-environment.md` (Python on both machines, first runs),
+  `testbed/slurm/nfs.md` (shared work dir for `shared_fs`).
 
 ## Missing: the fidelity plan
 

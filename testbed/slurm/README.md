@@ -10,7 +10,13 @@
      start order per machine as Wayline), and machines, cores (14 per machine) and
      bandwidth come from testbed/machines.yaml. See RUN_DEFAULTS in
      src/saga_exec/backends/slurm/saga_slurm.py, experiments/slurm/README.md and
-     docs/formats.md. The original code is in src/saga_exec/legacy/slurm_saga.py. -->
+     docs/formats.md. The original code is in src/saga_exec/legacy/slurm_saga.py.
+     ALSO CHANGED: tasks are no longer placeholder sleeps with simulated transfers.
+     Each runs the shared task program (task/, as on Wayline: sleep or real sha256
+     work, random-byte outputs) and data really moves ("transport": "direct" =
+     node-local scratch + per-machine data servers, default; "shared_fs" = NFS work
+     dir). "bandwidth" no longer exists. Setup: task-environment.md (Python on both
+     machines) and nfs.md; details: docs/data-movement.md. -->
 
 # saga-slurm
 

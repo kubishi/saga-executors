@@ -41,7 +41,7 @@ the controller forwards). Defaults in bold:
 |---|---|---|
 | `nodes` | **`cores`**, `capacity` | `cores`: each machine is C SAGA nodes that each run ONE task at a time (the bridge's opt-in `nodeModel: cores`). `capacity` is the bridge's default (one node per machine, capacity = free CPU); not used by our experiments, needs SAGA `feature/capacity`. |
 | `cores` | **machines.yaml** `partitions.<k8s\|slurm>.saga_nodes_per_machine` (k8s 8, Slurm 14), or an int / `{machine: C}` | C, sent explicitly as `model.cores`, so SAGA's problem does not depend on the cluster's free CPU |
-| `links` | **`free`**, `measured` | self (same core) and intra-machine (core to core) links: `free` = 1e12 B/s; `measured` = `machines.yaml machines.<m>.self_bandwidth / intra_bandwidth` (currently UNMEASURED placeholders, 1e9; see `saga_exec.calibrate.links`) |
+| `links` | **`free`**, `measured` | self (same core) and intra-machine (core to core) links: `free` = 1e12 B/s; `measured` = `machines.yaml machines.<m>.self_bandwidth / intra_bandwidth` (currently UNMEASURED placeholders, 1e9; see `saga_exec.calibrate.links`, which measures through each backend's and transport's real data path) |
 | `transfer_latency` | **`0`** | fixed seconds per transfer. Only 0 is accepted: SAGA's `Network` edges have a speed but no latency, so evaluating this variant needs a SAGA Network-edge extension (edge latency, comm time = latency + size / speed) and the matching bridge field. The config slot exists so runs can be labelled with it once that lands. |
 
 - **Core names**: `<machine>/c<i>` everywhere (bridge, prediction.json `node`,
@@ -116,7 +116,9 @@ and per-backend partitions. What SAGA reads (`saga_exec.testbed.load_testbed`):
 
 | Key | Used for |
 |---|---|
-| `machines.<m>.speed` | related-machines speed (a config's `speed` overrides it, e.g. emulated speeds) |
+| `machines.<m>.speed` | related-machines speed (a config's `speed` overrides it, e.g. emulated speeds); `saga-calibrate-cpu` can set it |
+| `calibration.cpu.<backend>` | written by `saga_exec.calibrate.cpu` (marker block at the end of the file): per-machine sha256 rates, `hash_rate` (cpu mode's FID_HASH_RATE for a speed-1.0 slot) and the derived speeds |
+| `partitions.slurm.shared_workdir` | the Slurm `shared_fs` transport's work dir (NFS, not set up yet; testbed/slurm/nfs.md) |
 | `machines.<m>.self_bandwidth`, `intra_bandwidth` | `model.links: measured` (UNMEASURED placeholders for now) |
 | `network.links`, `network.default_bandwidth` | inter-machine links; Wayline's ConfigMap is generated from them |
 | `partitions.<p>.saga_nodes_per_machine` | default `model.cores` (k8s 8, Slurm 14) |
@@ -172,15 +174,23 @@ CPUs than SAGA cores (then k8s cannot run them all at once).
 }
 ```
 
-- Times in **seconds**, relative to the first task's start.
+- Times in **seconds**, relative to the first task's start. `start` / `end` are the
+  task program's own `taskStartUnix` / `closeUnix` on both backends (after
+  interpreter start-up, through close).
 - `node`: the most specific location observed (Wayline: machine; Slurm: `"cse-isha core5"`).
-- Optional per task: `input_read` / `compute` / `handoff` (Wayline SDK); `state`, `delay` (Slurm).
+- Per task, from the shared task core with the same definitions on both backends:
+  `input_read` / `compute` / `handoff` and `inputs_ready` (when its last input
+  became available: Wayline's `inputsReadyTime`; Slurm: the last producer's
+  close). What each phase *contains* depends on the data path; see
+  [data-movement.md](data-movement.md). Slurm also has `state` and `delay`
+  (`start - inputs_ready`).
 - Wayline also has `makespan_from_odag_start`; Slurm writes `summary.json` as before.
 - Per-run folder: Wayline `results/wayline/<instance>/<config name>/` with `template.yml`,
   `network-profile.yml`, `request.json`, `prediction.json`, `instance.json`, `config.json`,
   `runs/<odag>/{status.json,logs.txt,prediction.json,actual.json,gantt.png}`;
   Slurm `~/slurm-logs/saga/<run_id>/` with `prediction.json`, `actual.json`,
-  `summary.json`, `plan.json`, `job.sbatch`, `results.json`, `driver.log`, `gantt.png`.
+  `summary.json` (incl. `transport`, `transfers`), `plan.json`, `job.sbatch`, `task.pyz`,
+  `results.json`, `driver.log`, `server-<machine>.log` (direct), `<task>.out`, `gantt.png`.
 
 ## 4. Enactment: `enact_order` (both backends)
 
@@ -190,11 +200,32 @@ CPUs than SAGA cores (then k8s cannot run them all at once).
 | `order` (default) | `enactOrder: order`: a task's pod is created only after every earlier task in its machine's order has a pod | `start_after`: a step starts only after its machine-order predecessor has been started |
 
 Placement is always enacted (Wayline: the controller places; Slurm: `srun --nodelist`).
+On Slurm a task also needs its producers' steps COMPLETED; on Wayline its input
+data on its node (see 4b).
 Slurm's old `strict_order` (wait for the previous task on the same SAGA **core** to
 finish) is accepted with a deprecation warning and mapped to `order` / `none`.
 Fallbacks: the controller falls back to random placement when the sidecar fails and
 records it (`status.scheduling.used != requested`, `fallbackError`); `analyze.py`
 rejects such runs (`run-log.csv` phase `Rejected`).
+
+## 4b. What tasks do and how data moves
+
+Both backends run the same task program (`task/`): read every input, then `sleep`
+(runtime / speed) or `cpu` (runtime × `hash_rate` chained sha256, so the real
+machine sets the time), then write random-byte outputs, one per edge. Data is
+never simulated. How it moves is native to each system, and **the transport is
+an experimental variable**, not something the backends try to make equal
+([data-movement.md](data-movement.md)):
+
+| Backend / `transport` | Data path | Consumer starts when | Network transfer is in |
+|---|---|---|---|
+| Wayline | data agent: local install, background push to the consumer's node | its inputs are on its node | no task phase (gap before start) |
+| Slurm `direct` (default) | node-local scratch; per-machine data server; consumer pulls | producers' steps completed | consumer `input_read` |
+| Slurm `shared_fs` | files in a shared work dir (NFS) | producers' steps completed | producer `handoff` and/or consumer `input_read` |
+
+Comparing the two Slurm transports with each other and with Wayline is part of
+the study, for example whether SAGA's link model fits one data path better than
+another.
 
 ## 5. Legacy vs bridge
 
@@ -230,29 +261,34 @@ machines.yaml + override), 15 (order: `enact_order`), 26 (reproducibility:
 | 8 | Core partition enforcement | kubelet reservations (12 allocatable CPUs on lambda1), no pinning to cores 18–31 | `CpuSpecList` + cgroups pin to cores 4–17 |
 | 8b | Cores SAGA plans vs what runs concurrently | 8 SAGA cores; kubelet admits up to the free CPU (≈12 threads on lambda1, unverified on isha), so more than 8 tasks may overlap with `enact_order: none` | 14 SAGA cores = Slurm's 14-core share |
 | 10 | Task names | must be Kubernetes DNS labels | anything |
-| 13 | What a task does | `sleep` (FID_SECONDS / speed) or `cpu` (sha256 loop) in a container with the Wayline SDK | `bash sleep` for its runtime on that machine |
-| 14 | Data transfers | real bytes through Wayline's data agent (also between tasks on one machine / core) | simulated: driver delays a child by bytes / SAGA's link speed (self / intra / inter as in the model) |
+| 13 | What a task does | SETTLED: the same task program (`task/`, `sleep` or `cpu`) on both; container (python:3.11) vs. `srun` step (uv Python 3.12) | |
+| 14 | Data transfers | SETTLED (no simulation): real bytes on both, each backend's own data path (4b); the transport is an experimental variable | |
 | 16 | Placement mechanism | the controller binds pods to SAGA's node | `srun --nodelist=machine` (+ `--exact`, `--cpu-bind=none`) |
-| 17 | Measured start / end | SDK `taskStartTime` / `taskCloseTime` (end includes output handoff) | task's own `date +%s.%N` around `sleep` |
-| 18 | Clocks | per-node clocks in SDK timestamps | per-node clocks; driver's clock for transfer waits |
+| 17 | Measured start / end | SETTLED: the task core's `taskStartUnix` / `closeUnix` on both (end includes output handoff) | |
+| 18 | Clocks | per-node clocks in SDK timestamps | per-node clocks (`inputs_ready` is the producer's clock) |
 | 19 | Measured makespan | last close − first start (also `makespan_from_odag_start`) | max end − min start |
 | 20 | Actual `node` | machine only | host + physical core |
-| 21 | Phase breakdown | `input_read`, `compute`, `handoff` | `delay`, `transfer_from` |
+| 21 | Phase breakdown | SETTLED: `input_read`, `compute`, `handoff`, `inputs_ready` on both (Slurm also `delay`) | |
 | 23 | Output location | `results/wayline/` in the repo | `~/slurm-logs/saga/<run_id>/` on lambda |
 | 24 | Run identity | config hash in name + ODAG name | timestamp `run_id` |
 | 25 | Repetitions | `run.py --reps N --shuffle SEED`, `run-log.csv` | one run per invocation |
-| 27 | Speed calibration | `hash_rate` by hand | `profiling_test.py` (zlib) |
+| 27 | Speed calibration | `hash_rate` by hand (k8s calibration outlined in `calibrate.cpu`) | `saga-calibrate-cpu`: the cpu-mode loop per core, single and all cores busy, into machines.yaml `calibration.cpu.slurm` + `speed` (not run yet) |
 | 28 | Gantt rows | predicted: SAGA core; actual: first-free slot per machine | predicted: SAGA core; actual: physical core |
-| 29 | Python on the task side | `python:3.11-slim` image | none (bash) |
+| 29 | Python on the task side | `python:3.11-slim` image | uv-managed 3.12 on each machine (testbed/slurm/task-environment.md) |
+| 30 | Shared-FS link asymmetry | n/a | with `shared_fs` over NFS from lambda, a "same-machine" transfer on isha crosses the network twice (write to lambda, read back) while lambda→isha crosses once; SAGA's per-machine self/intra and per-pair inter speeds cannot express this. Fit separately per transport (`calibrate.links`)? |
 
 Further questions:
 
 - Should the per-task CPU unit be the same hardware on both (thread vs core)?
+  Recommended k8s change (static CPU manager, whole cores): testbed/k8s/README.md.
+- Which data paths fit SAGA's model best (Wayline push, Slurm direct pull, Slurm
+  shared FS)? Link calibration per backend and transport: `saga_exec.calibrate.links`.
 - How should the k8s and Slurm partitions be sized so both backends give SAGA the same capacity?
 - Directed links: the bridge's min-of-directions is a conservative undirected model (bridge.py LIMITATION).
 - Model variants to evaluate: `links` free vs measured (needs `calibrate.links` run
   first) and `transfer_latency` (needs the SAGA extension above). Is the latency term
   worth its complexity? Compare prediction error with and without it.
-- Where do calibration results go (machines.yaml vs per-run config)?
+- Where do calibration results go (machines.yaml vs per-run config)? For now
+  machines.yaml `calibration` (per backend), with speeds copied to `machines.<m>.speed`.
 - Wayline's own `status.predictedTasks` re-predicts SAGA's placement with Wayline's
   cost model; worth comparing with SAGA's prediction as a third data point.

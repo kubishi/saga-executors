@@ -2,6 +2,7 @@
   "_note": "converted from the legacy run file (graph inline / time_scale); old: {\"scheduler\": \"heft\", \"time_scale\": 1, \"bandwidth\": 1, \"nodes\": {\"cse-lambda1\": 1.0, \"cse-isha\": 0.5}}",
   "instance": "graphs/slurm-transfer-test.json",
   "scheduler": "heft",
+  "mem": "2G",
   "sec_per_cost": 1.0,
   "bytes_per_size": 117000000.0,
   "speed": {

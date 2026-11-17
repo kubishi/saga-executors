@@ -55,3 +55,43 @@ checked (that would require querying the cluster).
 
 Not copied: `~/k8s-cluster/logs/` (kubeadm init output may contain join tokens),
 kubeconfigs, anything under `~/.kube` or `~/.ssh`.
+
+## Recommended change: give each task a whole core (for Nick, NOT APPLIED)
+
+**Mismatch.** A Slurm task gets `--cpus-per-task=2`, which is one physical core
+(both hyperthreads, pinned by cgroups to Slurm's cores 4–17). A Wayline task
+gets `cpu: "1"`, which is one hyperthread's worth of CFS quota anywhere in the
+shared pool. Its sibling thread may run another task, and nothing pins it to the
+k8s cores 18–31. So the "same" task does different work per second on the two
+backends, and cpu-mode hash rates are not comparable (docs/formats.md open
+question 6). Calibrating each backend separately (`calibration.cpu.<backend>`)
+only measures the gap; it does not close it.
+
+**Fix (kubelet static CPU manager + whole-core requests):**
+
+1. Kubelet config on both nodes (`testbed/k8s/kubeadm/patches/kubeletconfiguration.yaml`):
+
+   ```yaml
+   cpuManagerPolicy: static
+   cpuManagerPolicyOptions:
+     full-pcpus-only: "true"        # allocate whole physical cores (both hyperthreads)
+   # Replace systemReserved/kubeReserved cpu with an explicit CPU set: OS cores 0-3
+   # and Slurm's 4-17 (+ their siblings), so k8s owns exactly cores 18-31.
+   reservedSystemCPUs: "0-17,32-49"
+   systemReserved: {memory: "210Gi"}   # keep the memory reservation; drop its cpu
+   ```
+
+   Changing the policy needs, per node: drain, stop kubelet, delete
+   `/var/lib/kubelet/cpu_manager_state`, start kubelet, uncordon.
+2. Tasks request integer CPUs with limits = requests (Guaranteed QoS). The
+   controller already sets limits = requests (`parseResources`). With
+   `full-pcpus-only` a task must ask for `cpu: "2"` (one core); `cpu: "1"` would
+   be rejected (SMTAlignmentError). So set `Config.cpu = "2"` in
+   `experiments/wayline/generate.py`. The SAGA cores model is unaffected, since
+   `model.cores` is explicit.
+3. Then `partitions.k8s` in machines.yaml becomes 14 cores (28 threads), with
+   `task_unit: 1 physical core`, the same as Slurm. Re-run the CPU calibration
+   for k8s.
+
+Check afterwards: `kubectl exec <task pod> -- grep Cpus_allowed_list /proc/self/status`
+should show two sibling CPUs (e.g. `18,50`).

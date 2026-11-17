@@ -43,6 +43,10 @@ partitions:
     saga_nodes_per_machine: 14
     saga_cpu_millis: {cse-lambda1: 14000, cse-isha: 14000}
     task_cpu: "1"                # 1 core; Slurm gets 2 CPUs (threads) per core
+    # Work dir for the "shared_fs" transport (run setting "workdir" overrides it):
+    # same path on every machine. NOT SET UP YET: NFS export from cse-lambda1,
+    # see testbed/slurm/nfs.md. The default "direct" transport needs no shared FS.
+    shared_workdir: /srv/saga-exec
   k8s:
     cores: "18-31"       # intended; NOT pinned (no static CPU manager / reservedSystemCPUs)
     enforced_by: >-

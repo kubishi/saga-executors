@@ -20,7 +20,12 @@
      from status.scheduling and rejects runs that fell back to random placement.
      Config.C is now Config.model.cores (default: testbed/machines.yaml). The converter described
      below is src/saga_exec/legacy/wayline_convert.py. PYTHONHASHSEED is set by the
-     bridge runner. See docs/formats.md. -->
+     bridge runner. See docs/formats.md.
+     task/task.py is now split into a backend-agnostic core (task/fidelity_core.py)
+     and transports (task/transport_wayline.py here; the Slurm backend runs the same
+     core). Behaviour on Wayline is unchanged; the env contract below is a subset of
+     docs/data-movement.md (FID_TRANSPORT defaults to wayline). The image now COPYs
+     task/*.py. -->
 
 # Fidelity: how well does SAGA's model predict Wayline?
 

@@ -32,6 +32,8 @@ saga-wayline-run = "saga_exec.backends.wayline.run:main"
 saga-wayline-analyze = "saga_exec.backends.wayline.analyze:main"
 saga-slurm = "saga_exec.backends.slurm.saga_slurm:main"
 saga-slurm-profile = "saga_exec.backends.slurm.profiling_test:main"
+saga-calibrate-cpu = "saga_exec.calibrate.cpu:main"
+saga-calibrate-links = "saga_exec.calibrate.links:main"
 
 [dependency-groups]
 dev = [

@@ -15,3 +15,7 @@ uv run saga-slurm experiments/slurm/runs/diamond.json
 `runs/tests/` are the four random-shape graphs behind
 `results/examples/slurm/test_*.csv` (made with the legacy model).
 Results are written to `~/slurm-logs/saga/<run_id>/` (unchanged from the original).
+Tasks do real work and move real data. The run settings `mode` (`sleep` | `cpu`),
+`transport` (`direct` | `shared_fs`) and the others are listed in `RUN_DEFAULTS`.
+Before the first run, set up Python on both machines:
+`testbed/slurm/task-environment.md`.

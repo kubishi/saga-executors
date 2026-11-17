@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """A quick first profiling test: time the same CPU work on each machine and compare.
 
+SUPERSEDED by saga_exec.calibrate.cpu (`uv run saga-calibrate-cpu`), which times the
+exact cpu-mode task loop and writes machines.yaml. Kept for reference.
+
 Each machine compresses the same data with zlib a fixed number of times, first on
 one core and then on all of Slurm's CPUs at once. A faster machine takes less time.
 This is one simple workload, so the speeds are only a rough first estimate. Other

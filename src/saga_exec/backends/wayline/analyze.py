@@ -76,6 +76,8 @@ def actual_from_status(status: dict) -> dict:
                 "input_read": t.get("inputReadSeconds"),
                 "compute": t.get("computeSeconds"),
                 "handoff": t.get("handoffSeconds"),
+                # last input installed on its node (controller's inputsReadyTime; sources: None)
+                "inputs_ready": (parse_time(t["inputsReadyTime"]) - t0) if t.get("inputsReadyTime") else None,
             }
             for t in sorted(tasks, key=lambda t: (starts[t["name"]], t["name"]))
         },

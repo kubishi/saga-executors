@@ -13,6 +13,7 @@ MODULES = [
     "saga_exec.compare",
     "saga_exec.calibrate",
     "saga_exec.calibrate.links",
+    "saga_exec.calibrate.cpu",
     "saga_exec.backends.base",
     "saga_exec.backends.wayline.convert",
     "saga_exec.backends.wayline.run",

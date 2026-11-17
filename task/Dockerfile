@@ -17,5 +17,7 @@ WORKDIR /app
 # The wl SDK imports pyzmq for its zeromq transport.
 RUN pip install --no-cache-dir pyzmq
 COPY --from=wayline sdk/python/wl ./wl
-COPY task.py .
+# task.py + the backend-agnostic core and the Wayline transport (stdlib + wl).
+# transport_direct.py / transport_shared_fs.py / calibrate_cpu.py are for the Slurm backend; harmless here.
+COPY *.py ./
 CMD ["python", "task.py"]

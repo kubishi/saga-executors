@@ -17,6 +17,10 @@ Each backend then enacts only the schedule's decisions: which machine runs each
 task, and optionally the order of tasks on each machine. When tasks actually start
 is up to the real system, and the gap between SAGA's predicted times
 (`prediction.json`) and the measured ones (`actual.json`) is what we study.
+On both systems every task runs the same program (`task/`), which really
+computes and really moves its data. Each system moves data in its own way, and
+on Slurm the data path is itself a setting of the experiment
+([docs/data-movement.md](docs/data-movement.md)).
 
 In SAGA's model each machine is a set of cores that each run one task at a time.
 Task runtime is cost divided by machine speed, and a transfer takes data size
@@ -52,7 +56,9 @@ branches (see [testbed/k8s/README.md](testbed/k8s/README.md)); currently no
 sidecar image is deployed.
 
 Slurm: `uv run saga-slurm experiments/slurm/runs/<run>.json` on `cse-lambda1`
-submits a job. Add `"dry_run": true` to a run file to only print it.
+submits a job. Add `"dry_run": true` to a run file to only print it. Both
+machines need the same uv-managed Python first
+([testbed/slurm/task-environment.md](testbed/slurm/task-environment.md)).
 
 ## Layout and ownership
 
