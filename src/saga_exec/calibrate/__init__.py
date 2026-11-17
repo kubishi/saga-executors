@@ -6,6 +6,8 @@ Existing pieces to consolidate here:
   - Wayline: Config.hash_rate in backends/wayline/convert.py (cpu mode: sha256 hashes/s of
     the reference machine) -- measured by hand so far; no script in Nick's fork.
   - Bandwidth: iperf3 pod-to-pod, 2026-10-27 (testbed/machines.yaml); no script committed.
+  - Self / intra-machine bandwidth (and per-transfer latency) through Wayline's data
+    path: links.py (outline + offline template builder; not run yet).
 
 Output should update testbed/machines.yaml (speed, network.links).
 """

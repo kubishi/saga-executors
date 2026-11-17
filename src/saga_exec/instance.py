@@ -6,9 +6,8 @@ Format = Nick's graphs/*.json (docs/formats.md, "Instance"):
      "tasks": {"a": 2.0, ...},                 # task -> cost (cost units)
      "edges": [["a", "b", 10000000], ...]}     # [producer, consumer, size] (size units)
 
-Not used by the backends yet:
-  TODO(wayline): backends/wayline/convert.py has its own load_instance/to_task_graph.
-  TODO(slurm):   backends/slurm/saga_slurm.py reads run files (graph + settings mixed).
+Both backends read instances with load_instance and hand them to
+saga_exec.scheduling. to_task_graph is for direct SAGA use (legacy comparisons).
 """
 
 from __future__ import annotations

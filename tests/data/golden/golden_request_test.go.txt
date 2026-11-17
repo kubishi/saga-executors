@@ -1,0 +1,97 @@
+package main
+
+// TEMPORARY (not committed): dump the exact request sagaAssignTasks sends for
+// a saga-executors template, to check saga_exec.scheduling.build_request.
+
+import (
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"strings"
+	"testing"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/yaml"
+)
+
+func TestZZGoldenRequest(t *testing.T) {
+	tplPath, cmPath, outPath := os.Getenv("GOLDEN_TEMPLATE"), os.Getenv("GOLDEN_CONFIGMAP"), os.Getenv("GOLDEN_OUT")
+	if tplPath == "" {
+		t.Skip("GOLDEN_TEMPLATE not set")
+	}
+	load := func(p string) *unstructured.Unstructured {
+		y, err := os.ReadFile(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		j, err := yaml.YAMLToJSON(y)
+		if err != nil {
+			t.Fatal(err)
+		}
+		u := &unstructured.Unstructured{}
+		if err := u.UnmarshalJSON(j); err != nil {
+			t.Fatal(err)
+		}
+		return u
+	}
+	templateObj := load(tplPath)
+	// The ODAG run.py creates: template spec minus template-only fields.
+	odag := &unstructured.Unstructured{Object: map[string]interface{}{"spec": map[string]interface{}{}}}
+	for k, v := range templateObj.Object["spec"].(map[string]interface{}) {
+		switch k {
+		case "profiling", "defaults", "retention", "description":
+		default:
+			odag.Object["spec"].(map[string]interface{})[k] = v
+		}
+	}
+	tasks := extractTasks(odag)
+
+	cm := load(cmPath)
+	data, _, _ := unstructured.NestedStringMap(cm.Object, "data")
+	newCache := map[string]float64{}
+	for k, v := range data {
+		var f float64
+		if _, err := fmtSscan(v, &f); err != nil {
+			t.Fatal(err)
+		}
+		if k == "defaultBandwidth" {
+			bandwidthDefault = f
+		} else {
+			newCache[strings.Replace(k, "_to_", "->", 1)] = f
+		}
+	}
+	bandwidthCache = newCache
+
+	db, err := initProfilerDB(t.TempDir() + "/p.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tplName := templateObj.GetName()
+	cfg := extractProfilingConfig(templateObj)
+	rtRes := buildRuntimeResolver(db, tplName, tasks, cfg.MinSamples, extractDefaultRuntime(templateObj), cfg.RuntimeSource)
+	dsRes := buildDataSizeResolver(db, tplName, tasks, cfg.MinSamples, extractDefaultDataSize(templateObj), cfg.RuntimeSource)
+	bwRes := buildBandwidthResolver(db, cfg.MinSamples, cfg.BandwidthSource)
+
+	nodes := map[string]nodeInfo{
+		"cse-lambda1": {name: "cse-lambda1", cpuMillis: 12000},
+		"cse-isha":    {name: "cse-isha", cpuMillis: 12000},
+	}
+	var body []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ = io.ReadAll(r.Body)
+		w.WriteHeader(500)
+		io.WriteString(w, `{"error":"stub"}`)
+	}))
+	defer srv.Close()
+	schedName, _, _ := unstructured.NestedString(odag.Object, "spec", "scheduler")
+	algo := strings.TrimPrefix(schedName, sagaSchedulerPrefix)
+	schedCfg := extractSchedulerConfig(templateObj)
+	_, _, _ = sagaAssignTasksWithModel(algo, srv.URL, schedCfg.Options, schedCfg.Model, tasks, nodes, rtRes, dsRes, bwRes)
+	if err := os.WriteFile(outPath, body, 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func fmtSscan(s string, f *float64) (int, error) { return fmt.Sscan(s, f) }

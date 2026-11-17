@@ -1392,6 +1392,7 @@ dependencies = [
     { name = "matplotlib" },
     { name = "numpy" },
     { name = "pyyaml" },
+    { name = "wl-saga-sidecar" },
 ]
 
 [package.dev-dependencies]
@@ -1406,6 +1407,7 @@ requires-dist = [
     { name = "matplotlib" },
     { name = "numpy" },
     { name = "pyyaml" },
+    { name = "wl-saga-sidecar", editable = "../wayline/saga-sidecar" },
 ]
 provides-extras = ["wayline", "slurm"]
 
@@ -1684,6 +1686,24 @@ sdist = { url = "https://files.pythonhosted.org/packages/71/13/6c0364afdf9483662
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f6/9f/04092ffdf806bd26a4e021832e733ee0c1fa2190495b54e28ebaba1abb05/wfcommons-1.6-cp314-cp314-macosx_26_0_arm64.whl", hash = "sha256:fc18b1400ca58e750d676c2d5ee2e696e9ac9cd2d7d2224747eca2bbd865d0f5", size = 6121076, upload-time = "2026-10-19T00:13:10.865Z" },
 ]
+
+[[package]]
+name = "wl-saga-sidecar"
+version = "0.1.0"
+source = { editable = "../wayline/saga-sidecar" }
+dependencies = [
+    { name = "anrg-saga" },
+    { name = "numpy" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "anrg-saga", specifier = ">=2.1.0" },
+    { name = "numpy" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8" }]
 
 [[package]]
 name = "z3-solver"

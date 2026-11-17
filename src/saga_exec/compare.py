@@ -5,9 +5,8 @@ Metrics both backends already report in some form:
   - per-task start/end deviation
   - placement check (same machine), order check (same per-machine start order)
 
-TODO: Nick's analyze.py draws a Gantt pair; Sebastian's saga_slurm.py prints a
-table + summary.json + Gantt and his results/*.csv add handoff counts. Move the
-common parts here once prediction/actual formats are agreed (docs/formats.md).
+Both backends now write prediction.json / actual.json in the shared shape; the
+Gantt pairs and tables are still per backend (analyze.py, saga_slurm.py).
 """
 
 from __future__ import annotations

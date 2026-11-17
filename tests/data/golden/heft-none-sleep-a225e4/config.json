@@ -1,0 +1,18 @@
+{
+  "scheduler": "heft",
+  "enact_order": "none",
+  "mode": "sleep",
+  "speed": {},
+  "sec_per_cost": 1.0,
+  "bytes_per_size": 1.0,
+  "cpu": "1",
+  "hash_rate": 0.0,
+  "memory": null,
+  "options": {},
+  "model": {
+    "nodes": "capacity",
+    "cores": null,
+    "links": "free",
+    "transfer_latency": 0.0
+  }
+}

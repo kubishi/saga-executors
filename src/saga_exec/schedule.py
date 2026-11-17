@@ -1,19 +1,17 @@
-"""Shared schedule record (DRAFT): prediction.json / actual.json.
-
-Shape follows Nick's prediction.json/actual.json (docs/formats.md):
+"""Shared schedule record: prediction.json / actual.json (docs/formats.md).
 
     {"makespan": 7.0,
-     "tasks": {"a": {"node": "cse-isha-c6", "machine": "cse-isha",
+     "tasks": {"a": {"node": "cse-isha", "machine": "cse-isha",
                      "start": 0.0, "end": 2.0,
                      # actual only, optional:
                      "input_read": ..., "compute": ..., "handoff": ...}}}
 
-Times are seconds from the first task's start. `node` is the SAGA core in a
-prediction; in an actual it is whatever the backend can observe (Wayline: the
-machine; Slurm: machine + physical core).
-
-TODO(wayline): convert.write_outputs / analyze.actual_from_status build these dicts inline.
-TODO(slurm):   saga_slurm.main writes summary.json with a different shape (rows list).
+Times are seconds from the first task's start. `node` in a prediction is the
+SAGA node, which with Wayline's bridge is the machine (legacy core-node
+predictions: "cse-isha-c6"); in an actual it is whatever the backend can
+observe (Wayline: the machine; Slurm: "cse-isha core5"). Predictions are
+written by saga_exec.scheduling (extra keys: order, request, response); this
+class reads both kinds and ignores the extras.
 """
 
 from __future__ import annotations
@@ -67,7 +65,7 @@ class ScheduleRecord:
 
 
 def prediction_from_saga(schedule: Schedule, machine_of, time_scale: float = 1.0) -> ScheduleRecord:
-    """SAGA Schedule -> ScheduleRecord, dropping SAGA's super source/sink."""
+    """SAGA Schedule -> ScheduleRecord, dropping SAGA's super source/sink (legacy core-node schedules)."""
     tasks = {}
     real = [t for ts in schedule.mapping.values() for t in ts if t.name not in SUPER_TASKS]
     for t in sorted(real, key=lambda t: (t.start, t.name)):

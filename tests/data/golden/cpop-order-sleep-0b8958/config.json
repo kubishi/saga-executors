@@ -1,0 +1,24 @@
+{
+  "scheduler": "cpop",
+  "enact_order": "order",
+  "mode": "sleep",
+  "speed": {
+    "cse-isha": 0.5
+  },
+  "sec_per_cost": 1.0,
+  "bytes_per_size": 1.0,
+  "cpu": "1500m",
+  "hash_rate": 0.0,
+  "memory": null,
+  "options": {
+    "x": 1
+  },
+  "model": {
+    "nodes": "cores",
+    "cores": {
+      "cse-isha": 3
+    },
+    "links": "measured",
+    "transfer_latency": 0.0
+  }
+}

@@ -1,0 +1,139 @@
+{
+    "algorithm": "heft",
+    "model": {
+        "cores": {
+            "cse-isha": 8,
+            "cse-lambda1": 8
+        },
+        "intraBandwidth": {
+            "cse-isha": 1000000000000,
+            "cse-lambda1": 1000000000000
+        },
+        "nodeModel": "cores",
+        "selfBandwidth": {
+            "cse-isha": 1000000000000,
+            "cse-lambda1": 1000000000000
+        }
+    },
+    "dag": {
+        "tasks": [
+            {
+                "name": "a",
+                "dependencies": [],
+                "runtime": 2,
+                "runtimeProfile": {
+                    "cse-isha": 2,
+                    "cse-lambda1": 2
+                },
+                "dataSizeProfile": {
+                    "cse-isha": 0,
+                    "cse-lambda1": 0
+                },
+                "cpuMillis": 1000
+            },
+            {
+                "name": "b",
+                "dependencies": [
+                    "a"
+                ],
+                "inputs": [
+                    {
+                        "producer": "a",
+                        "object": "to-b",
+                        "bytes": 10000000
+                    }
+                ],
+                "runtime": 4,
+                "runtimeProfile": {
+                    "cse-isha": 4,
+                    "cse-lambda1": 4
+                },
+                "dataSizeProfile": {
+                    "cse-isha": 0,
+                    "cse-lambda1": 0
+                },
+                "cpuMillis": 1000
+            },
+            {
+                "name": "c",
+                "dependencies": [
+                    "a"
+                ],
+                "inputs": [
+                    {
+                        "producer": "a",
+                        "object": "to-c",
+                        "bytes": 20000000
+                    }
+                ],
+                "runtime": 3,
+                "runtimeProfile": {
+                    "cse-isha": 3,
+                    "cse-lambda1": 3
+                },
+                "dataSizeProfile": {
+                    "cse-isha": 0,
+                    "cse-lambda1": 0
+                },
+                "cpuMillis": 1000
+            },
+            {
+                "name": "d",
+                "dependencies": [
+                    "b",
+                    "c"
+                ],
+                "inputs": [
+                    {
+                        "producer": "b",
+                        "object": "to-d",
+                        "bytes": 5000000
+                    },
+                    {
+                        "producer": "c",
+                        "object": "to-d",
+                        "bytes": 5000000
+                    }
+                ],
+                "runtime": 1,
+                "runtimeProfile": {
+                    "cse-isha": 1,
+                    "cse-lambda1": 1
+                },
+                "dataSizeProfile": {
+                    "cse-isha": 0,
+                    "cse-lambda1": 0
+                },
+                "cpuMillis": 1000
+            }
+        ]
+    },
+    "clusterState": {
+        "nodes": [
+            {
+                "name": "cse-isha",
+                "ready": true,
+                "cpuMillis": 12000,
+                "memBytes": 0
+            },
+            {
+                "name": "cse-lambda1",
+                "ready": true,
+                "cpuMillis": 12000,
+                "memBytes": 0
+            }
+        ],
+        "bandwidth": [
+            {
+                "from": "cse-isha",
+                "to": "cse-lambda1",
+                "bytesPerSec": 117625000
+            },
+            {
+                "from": "cse-lambda1",
+                "to": "cse-isha",
+                "bytesPerSec": 117000000
+            }
+        ]
+    }
+}

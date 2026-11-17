@@ -1,11 +1,10 @@
-# DRAFT single source of truth for the testbed (see docs/formats.md).
-# Neither backend reads this file yet: the Wayline backend hard-codes MACHINES /
-# BANDWIDTH in backends/wayline/convert.py and the Slurm backend hard-codes NODES in
-# backends/slurm/slurm_common.py. saga_exec.network.load_machines() reads it.
+# Single source of truth for the testbed (see docs/formats.md). Read by
+# saga_exec.testbed.load_testbed(); both backends build their SAGA input from it.
 #
-# Units: bandwidth in bytes/s; speed is relative (1.0 = reference machine).
+# Units: bandwidth in bytes/s; speed is relative (1.0 = reference machine);
+# CPU in Kubernetes millicores (1000 = one task-sized CPU, see task_cpu).
 
-version: 0
+version: 1
 
 machines:
   cse-lambda1:
@@ -13,12 +12,18 @@ machines:
     cores: 32            # physical; 64 hardware threads (SMT 2)
     os: Ubuntu 24.04
     speed: 1.0           # placeholder; not yet calibrated (see saga_exec.calibrate)
+    # Local links through the real data path (bytes/s), used when a run's
+    # model.links is "measured". UNMEASURED PLACEHOLDERS (saga_exec.calibrate.links):
+    self_bandwidth: 1.0e9    # same core: consecutive tasks (Wayline still moves data via its data agent)
+    intra_bandwidth: 1.0e9   # core to core within this machine
     roles: [k8s-control-plane, k8s-worker, slurm-controller, slurm-worker, image-registry]
   cse-isha:
     cpu: AMD EPYC 9354
     cores: 32
     os: Ubuntu 22.04
     speed: 1.0           # placeholder; not yet calibrated
+    self_bandwidth: 1.0e9    # UNMEASURED placeholder (see cse-lambda1)
+    intra_bandwidth: 1.0e9   # UNMEASURED placeholder
     roles: [k8s-worker, slurm-worker]
 
 # Core partitioning on each machine (same on both), from Sebastian's
@@ -32,7 +37,12 @@ partitions:
     linux_cpus: "4-17,36-49"
     enforced_by: slurm.conf CpuSpecList + cgroup.conf ConstrainCores
     task_unit: '1 physical core (2 hardware threads) per task (run file "cpus": 1)'
-    saga_nodes_per_machine: 14   # run file "cores" default
+    # What SAGA sees: saga_nodes_per_machine one-task-at-a-time SAGA nodes (cores)
+    # per machine. saga_cpu_millis is what the bridge request reports as node CPU
+    # (only used by the bridge's capacity model, which our runs do not use).
+    saga_nodes_per_machine: 14
+    saga_cpu_millis: {cse-lambda1: 14000, cse-isha: 14000}
+    task_cpu: "1"                # 1 core; Slurm gets 2 CPUs (threads) per core
   k8s:
     cores: "18-31"       # intended; NOT pinned (no static CPU manager / reservedSystemCPUs)
     enforced_by: >-
@@ -40,14 +50,26 @@ partitions:
       -> 64 - 52 = 12 allocatable CPUs (hardware threads), not tied to cores 18-31.
       From the kubeadm config used on cse-lambda1; cse-isha not verified.
     task_unit: 'cpu: "1" (1 hardware thread) per task'
-    saga_nodes_per_machine: 8    # Nick's Config.C in the smoke runs
+    # What SAGA sees: saga_nodes_per_machine cores per machine (sent explicitly in
+    # the request's model.cores, so it does not depend on the cluster's free CPU).
+    saga_nodes_per_machine: 8    # Nick's C in the smoke runs; must fit allocatable CPU
+    # The controller reports each node's allocatable CPU minus non-Wayline pod
+    # requests as cpuMillis; our requests carry it but the cores model ignores it.
+    # UNVERIFIED (12 allocatable on lambda1 before system pods; isha not checked);
+    # analyze.py warns if status.scheduling.externalNodeCPUMillis differs.
+    saga_cpu_millis: {cse-lambda1: 12000, cse-isha: 12000}
+    task_cpu: "1"                # 1 hardware thread
 
 network:
   # iperf3 pod-to-pod, 10 s, first 2 s omitted, measured 2026-10-27 (Nick).
   # Same numbers as testbed/k8s/wayline-deployments/network-profile-configmap.yml.
-  # SAGA links are undirected; the Wayline backend uses min of both directions.
+  # Directed. SAGA links are undirected; the bridge uses min of both directions.
   links:
     - {src: cse-lambda1, dst: cse-isha,    bandwidth: 117000000}
     - {src: cse-isha,    dst: cse-lambda1, bandwidth: 117625000}
-  # Between cores of one machine. Open question: Wayline uses 1e12, Slurm uses inf.
+  # Pairs not listed (Wayline's default, wl-network-profile defaultBandwidth).
+  default_bandwidth: 125000000
+  # Within a machine: machines.<m>.self_bandwidth / intra_bandwidth when a run's
+  # model.links is "measured"; 1e12 ("free") otherwise.
+  # LEGACY only (students' core-node models; Wayline used 1e12, Slurm inf):
   local_bandwidth: .inf

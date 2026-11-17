@@ -14,6 +14,9 @@ dependencies = [
     "numpy",
     "matplotlib",
     "pyyaml",
+    # Wayline's SAGA bridge (saga-sidecar/bridge.py): the one place a graph +
+    # testbed becomes a SAGA problem, offline and in the cluster alike.
+    "wl-saga-sidecar",
 ]
 
 [project.optional-dependencies]
@@ -39,6 +42,18 @@ dev = [
 [build-system]
 requires = ["uv_build>=0.10.5,<0.11.0"]
 build-backend = "uv_build"
+
+[tool.uv.sources]
+# Local clone of ANRGUSC/wayline on branch saga-executor (next to this repo).
+wl-saga-sidecar = { path = "../wayline/saga-sidecar", editable = true }
+# Once branch saga-executor is pushed, use this instead and `uv lock`:
+# wl-saga-sidecar = { git = "https://github.com/ANRGUSC/wayline", branch = "saga-executor", subdirectory = "saga-sidecar" }
+#
+# anrg-saga resolves to PyPI 2.1.0, which the bridge accepts for our model
+# (model.nodeModel "cores" with cost/speed runtimes). Its default capacity model
+# needs SAGA branch feature/capacity (2.2.0.dev1, unpublished); if that is ever
+# wanted, pin it here, e.g.:
+# anrg-saga = { git = "https://github.com/ANRGUSC/saga", branch = "feature/capacity" }
 
 [tool.uv.build-backend]
 module-name = "saga_exec"
