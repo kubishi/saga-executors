@@ -1,0 +1,53 @@
+# DRAFT single source of truth for the testbed (see docs/formats.md).
+# Neither backend reads this file yet: the Wayline backend hard-codes MACHINES /
+# BANDWIDTH in backends/wayline/convert.py and the Slurm backend hard-codes NODES in
+# backends/slurm/slurm_common.py. saga_exec.network.load_machines() reads it.
+#
+# Units: bandwidth in bytes/s; speed is relative (1.0 = reference machine).
+
+version: 0
+
+machines:
+  cse-lambda1:
+    cpu: AMD Threadripper PRO 7975WX
+    cores: 32            # physical; 64 hardware threads (SMT 2)
+    os: Ubuntu 24.04
+    speed: 1.0           # placeholder; not yet calibrated (see saga_exec.calibrate)
+    roles: [k8s-control-plane, k8s-worker, slurm-controller, slurm-worker, image-registry]
+  cse-isha:
+    cpu: AMD EPYC 9354
+    cores: 32
+    os: Ubuntu 22.04
+    speed: 1.0           # placeholder; not yet calibrated
+    roles: [k8s-worker, slurm-worker]
+
+# Core partitioning on each machine (same on both), from Sebastian's
+# testbed/slurm/README.md: cores 0-3 OS, 4-17 Slurm, 18-31 Kubernetes.
+# Linux CPU numbering: core k = CPUs k and k+32. Slurm numbering differs
+# (core k = Slurm CPUs 2k, 2k+1; see slurm.conf CpuSpecList).
+partitions:
+  os:    {cores: "0-3"}
+  slurm:
+    cores: "4-17"        # 14 cores; Linux CPUs 4-17,36-49
+    linux_cpus: "4-17,36-49"
+    enforced_by: slurm.conf CpuSpecList + cgroup.conf ConstrainCores
+    task_unit: '1 physical core (2 hardware threads) per task (run file "cpus": 1)'
+    saga_nodes_per_machine: 14   # run file "cores" default
+  k8s:
+    cores: "18-31"       # intended; NOT pinned (no static CPU manager / reservedSystemCPUs)
+    enforced_by: >-
+      kubelet systemReserved cpu 48 + kubeReserved cpu 4 (testbed/k8s/kubeadm)
+      -> 64 - 52 = 12 allocatable CPUs (hardware threads), not tied to cores 18-31.
+      From the kubeadm config used on cse-lambda1; cse-isha not verified.
+    task_unit: 'cpu: "1" (1 hardware thread) per task'
+    saga_nodes_per_machine: 8    # Nick's Config.C in the smoke runs
+
+network:
+  # iperf3 pod-to-pod, 10 s, first 2 s omitted, measured 2026-10-27 (Nick).
+  # Same numbers as testbed/k8s/wayline-deployments/network-profile-configmap.yml.
+  # SAGA links are undirected; the Wayline backend uses min of both directions.
+  links:
+    - {src: cse-lambda1, dst: cse-isha,    bandwidth: 117000000}
+    - {src: cse-isha,    dst: cse-lambda1, bandwidth: 117625000}
+  # Between cores of one machine. Open question: Wayline uses 1e12, Slurm uses inf.
+  local_bandwidth: .inf

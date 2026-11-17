@@ -1,0 +1,38 @@
+{
+  "name": "slurm-heft-v-cpop",
+  "source": "converted from run file runs/heft_v_cpop.json (MasterSebas04/saga-slurm@e4f6de2); missing edge sizes -> 0",
+  "tasks": {
+    "A": 1.0,
+    "B": 5.0,
+    "C": 2.0,
+    "D": 4.0,
+    "E": 1.0
+  },
+  "edges": [
+    [
+      "A",
+      "B",
+      0.0
+    ],
+    [
+      "A",
+      "C",
+      0.0
+    ],
+    [
+      "C",
+      "D",
+      0.0
+    ],
+    [
+      "B",
+      "E",
+      0.0
+    ],
+    [
+      "D",
+      "E",
+      0.0
+    ]
+  ]
+}

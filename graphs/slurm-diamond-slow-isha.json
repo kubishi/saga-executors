@@ -1,0 +1,32 @@
+{
+  "name": "slurm-diamond-slow-isha",
+  "source": "converted from run file runs/diamond_slow_isha.json (MasterSebas04/saga-slurm@e4f6de2); missing edge sizes -> 0",
+  "tasks": {
+    "A": 5.0,
+    "B": 14.0,
+    "C": 4.0,
+    "D": 2.0
+  },
+  "edges": [
+    [
+      "A",
+      "B",
+      0.0
+    ],
+    [
+      "A",
+      "C",
+      0.0
+    ],
+    [
+      "B",
+      "D",
+      0.0
+    ],
+    [
+      "C",
+      "D",
+      0.0
+    ]
+  ]
+}

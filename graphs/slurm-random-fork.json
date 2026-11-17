@@ -1,0 +1,44 @@
+{
+  "name": "slurm-random-fork",
+  "source": "materialized from run file runs/random_fork.json (MasterSebas04/saga-slurm@e4f6de2): saga.utils.random_graphs {'shape': 'fork', 'seed': 0, 'min_cost': 0.2, 'max_cost': 1.0} via saga_slurm.build_task_graph, anrg-saga 2.1.0",
+  "tasks": {
+    "D": 0.7486387402759047,
+    "B": 0.7606977752346797,
+    "C": 0.8249542751699126,
+    "E": 0.3791397504483041,
+    "A": 0.4764045250850676,
+    "F": 0.7164354356635951
+  },
+  "edges": [
+    [
+      "C",
+      "E",
+      0.6014336649864839
+    ],
+    [
+      "A",
+      "B",
+      0.9664537423947479
+    ],
+    [
+      "E",
+      "F",
+      0.7615820761329577
+    ],
+    [
+      "D",
+      "F",
+      0.9050455943430291
+    ],
+    [
+      "A",
+      "C",
+      0.2891968458389725
+    ],
+    [
+      "B",
+      "D",
+      0.2826626510470816
+    ]
+  ]
+}

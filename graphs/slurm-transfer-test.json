@@ -1,0 +1,32 @@
+{
+  "name": "slurm-transfer-test",
+  "source": "converted from run file runs/transfer_test.json (MasterSebas04/saga-slurm@e4f6de2); missing edge sizes -> 0",
+  "tasks": {
+    "A": 2.0,
+    "B": 6.0,
+    "C": 2.0,
+    "D": 2.0
+  },
+  "edges": [
+    [
+      "A",
+      "B",
+      3.0
+    ],
+    [
+      "A",
+      "C",
+      3.0
+    ],
+    [
+      "B",
+      "D",
+      0.0
+    ],
+    [
+      "C",
+      "D",
+      0.0
+    ]
+  ]
+}
