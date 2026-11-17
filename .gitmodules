@@ -1,0 +1,8 @@
+[submodule "external/wayline"]
+	path = external/wayline
+	url = https://github.com/ANRGUSC/wayline.git
+	branch = saga-executor
+[submodule "external/saga"]
+	path = external/saga
+	url = https://github.com/ANRGUSC/saga.git
+	branch = saga-executor
