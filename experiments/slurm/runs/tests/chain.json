@@ -1,6 +1,10 @@
 {
+  "_note": "converted from the legacy run file (graph inline / time_scale); old: {\"scheduler\": \"heft\", \"time_scale\": 3, \"nodes\": {\"cse-lambda1\": 1.0, \"cse-isha\": 0.5}, \"graph\": {\"shape\": \"chain\", \"seed\": 0}}",
+  "instance": "graphs/slurm-tests-chain.json",
   "scheduler": "heft",
-  "time_scale": 3,
-  "nodes": {"cse-lambda1": 1.0, "cse-isha": 0.5},
-  "graph": {"shape": "chain", "seed": 0}
+  "sec_per_cost": 3.0,
+  "speed": {
+    "cse-lambda1": 1.0,
+    "cse-isha": 0.5
+  }
 }

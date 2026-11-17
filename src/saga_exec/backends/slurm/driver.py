@@ -10,7 +10,9 @@ everything the task waits for has completed, and keeps going until all tasks
 are done:
 
     loop:
-        start every task whose dependencies have all COMPLETED   (srun -w <node> ...)
+        start every task whose dependencies have all COMPLETED, whose data has
+        arrived and whose start_after tasks (its machine's predecessor in SAGA's
+        order, when enact_order is "order") have been started   (srun -w <node> ...)
         when a step exits, record its result
     until nothing is pending or running
 
@@ -97,6 +99,13 @@ def data_arrived(task: dict, results: Dict[str, dict]) -> bool:
                for parent, seconds in task["transfer_from"].items())
 
 
+def started_after(task: dict, pending: set) -> bool:
+    """Enacted start order: the tasks before this one on its machine have been started
+    (Wayline's enactOrder "order"; they need not have finished). Started within this
+    loop iteration counts: they leave `pending` as soon as they are launched."""
+    return not any(prev in pending for prev in task.get("start_after", []))
+
+
 def main() -> None:
     plan_path = Path(sys.argv[1])
     plan = json.loads(plan_path.read_text())
@@ -145,7 +154,7 @@ def main() -> None:
             #    has arrived, earliest-planned first.
             deps_done = [n for n in pending
                          if all(results.get(d, {}).get("state") == "COMPLETED" for d in tasks[n]["waits_for"])]
-            ready = [n for n in deps_done if data_arrived(tasks[n], results)]
+            ready = [n for n in deps_done if data_arrived(tasks[n], results) and started_after(tasks[n], pending)]
             for name in sorted(ready, key=lambda n: (tasks[n]["predicted_start"], n)):
                 out_path = run_dir / f"{name}.out"
                 proc = subprocess.Popen(step_command(tasks[name]),
@@ -154,9 +163,11 @@ def main() -> None:
                 pending.discard(name)
                 log(t0, f"{name:<8} started   on {tasks[name]['node']}")
 
-            if pending and not running and not deps_done:
+            waiting_for_data = any(not data_arrived(tasks[n], results) for n in deps_done)
+            if pending and not running and not ready and not waiting_for_data:
                 # Nothing can make progress (should not happen with a valid plan).
-                # A task only waiting for its data isn't stuck, so it's in deps_done.
+                # A task only waiting for its data isn't stuck; one waiting only for
+                # start_after is, if nothing is running (an order/dependency cycle).
                 for name in sorted(pending):
                     results[name] = {"node": tasks[name]["node"], "state": "SKIPPED"}
                 log(t0, f"stuck: {sorted(pending)} can never start")

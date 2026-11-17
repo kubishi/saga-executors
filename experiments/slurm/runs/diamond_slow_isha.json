@@ -1,7 +1,10 @@
 {
+  "_note": "converted from the legacy run file (graph inline / time_scale); old: {\"scheduler\": \"cpop\", \"time_scale\": 1, \"nodes\": {\"cse-lambda1\": 1.0, \"cse-isha\": 0.5}}",
+  "instance": "graphs/slurm-diamond-slow-isha.json",
   "scheduler": "cpop",
-  "time_scale": 1,
-  "nodes": {"cse-lambda1": 1.0, "cse-isha": 0.5},
-  "tasks": {"A": 5, "B": 14, "C": 4, "D": 2},
-  "dependencies": [["A", "B"], ["A", "C"], ["B", "D"], ["C", "D"]]
+  "sec_per_cost": 1.0,
+  "speed": {
+    "cse-lambda1": 1.0,
+    "cse-isha": 0.5
+  }
 }

@@ -1,7 +1,9 @@
 """One sbatch per task, Slurm enforces the dependencies.
 
 NOT CONNECTED: saga_slurm.py doesn't import or call this file for now. It's kept
-here so it can be connected again later.
+here so it can be connected again later. It still takes the LEGACY inputs
+(SAGA ScheduledTasks on core-nodes, time_scale, strict_order deps); adapt it to
+saga_slurm.build_plan() (machine, duration, waits_for, start_after) first.
 
 Each job is pinned to its scheduled node and uses --dependency=afterok on its
 parents. A task logs to ~/slurm-logs/saga/<run_id>/<task>-<jobid>.out on the node

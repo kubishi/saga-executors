@@ -10,16 +10,14 @@ import subprocess
 import sys
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Dict, List, Optional
+from typing import Dict
 
-from saga import ScheduledTask
-
-from saga_exec.backends.slurm.slurm_common import NODES, RUNS_DIR, THREADS_PER_CORE, wait_for_jobs
+from saga_exec.backends.slurm.slurm_common import RUNS_DIR, THREADS_PER_CORE, wait_for_jobs
+from saga_exec.testbed import Testbed
 
 DRIVER = Path(__file__).resolve().parent / "driver.py"
 DRIVER_NODE = "cse-lambda1"          # where driver.py runs (has the run folder and venv)
 DRIVER_MEM_MB = 512                  # extra memory reserved on each node for the driver step
-MAX_CORES_PER_NODE = 14              # Slurm's share of each node (slurm.conf CpuSpecList)
 
 
 def mem_mb(value: str) -> int:
@@ -31,34 +29,40 @@ def mem_mb(value: str) -> int:
     return int(float(value))
 
 
-def allocation_files(run_id: str, run_dir: Path, tasks: Dict[str, ScheduledTask],
-                     deps: Dict[str, List[str]], transfers: Dict[str, Dict[str, float]],
-                     config: SimpleNamespace) -> tuple:
-    """Build plan.json (for driver.py) and job.sbatch (the one submission)."""
+def allocation_files(run_id: str, run_dir: Path, tasks: Dict[str, dict],
+                     config: SimpleNamespace, testbed: Testbed) -> tuple:
+    """Build plan.json (for driver.py) and job.sbatch (the one submission).
+
+    tasks: saga_slurm.build_plan() -- per task its machine (SAGA's core's machine),
+    predicted start, duration, data parents (waits_for), start_after (the
+    machine's start order, when enacted) and simulated transfer seconds.
+    """
     plan = {
         "run_id": run_id,
         "driver_node": DRIVER_NODE,
         "tasks": [
             {
-                "name": name, "node": t.node.split(":")[0],             # Slurm wants the machine, not saga's core
-                "duration": (t.end - t.start) * config.time_scale,
-                "predicted_start": t.start * config.time_scale,
+                "name": name, "node": t["machine"],
+                "duration": t["duration"],
+                "predicted_start": t["start"],
                 "cpus": config.cpus * THREADS_PER_CORE, "mem": config.mem,   # Slurm CPUs = threads
-                "waits_for": deps[name],
-                "transfer_from": transfers[name],                            # simulated data transfer
+                "waits_for": t["waits_for"],
+                "start_after": t["start_after"],
+                "transfer_from": t["transfer_from"],                         # simulated data transfer
             }
             for name, t in tasks.items()
         ],
     }
 
     # Reserve enough room on each node that a task never waits for space inside the
-    # reservation: room for every task assigned there, capped at Slurm's share.
+    # reservation: room for every task assigned there, capped at Slurm's share
+    # (machines.yaml partitions.slurm.saga_nodes_per_machine cores).
+    max_cores = min(testbed.partition("slurm").cores.values())
     per_node: Dict[str, int] = {}
     for t in tasks.values():
-        machine = t.node.split(":")[0]
-        per_node[machine] = per_node.get(machine, 0) + 1
-    nodes = [n for n in NODES if n in per_node or n == DRIVER_NODE]   # always include the driver's node
-    slots = max(1, min(max(per_node.values()), MAX_CORES_PER_NODE // config.cpus))
+        per_node[t["machine"]] = per_node.get(t["machine"], 0) + 1
+    nodes = [n for n in testbed.machines if n in per_node or n == DRIVER_NODE]   # always include the driver's node
+    slots = max(1, min(max(per_node.values()), max_cores // config.cpus))
 
     script = "\n".join([
         "#!/bin/bash",
@@ -82,16 +86,11 @@ def allocation_files(run_id: str, run_dir: Path, tasks: Dict[str, ScheduledTask]
     return plan, script
 
 
-def run_allocation(run_id: str, tasks: Dict[str, ScheduledTask], deps: Dict[str, List[str]],
-                   transfers: Dict[str, Dict[str, float]], config: SimpleNamespace) -> Optional[Dict[str, dict]]:
+def run_allocation(run_id: str, tasks: Dict[str, dict], config: SimpleNamespace,
+                   testbed: Testbed) -> Dict[str, dict]:
     """Submit job.sbatch once, wait for it, read driver.py's results.json."""
     run_dir = RUNS_DIR / run_id
-    plan, script = allocation_files(run_id, run_dir, tasks, deps, transfers, config)
-
-    if config.dry_run:
-        print(f"# job.sbatch (dry run, nothing submitted; would be written to {run_dir}/):")
-        print(script)
-        return None
+    plan, script = allocation_files(run_id, run_dir, tasks, config, testbed)
 
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "plan.json").write_text(json.dumps(plan, indent=2))
@@ -123,7 +122,7 @@ def run_allocation(run_id: str, tasks: Dict[str, ScheduledTask], deps: Dict[str,
 
     return {
         name: {
-            "node": results.get(name, {}).get("node", t.node),
+            "node": results.get(name, {}).get("node", t["machine"]),
             "state": results.get(name, {}).get("state", "MISSING"),
             "job_id": job_id,
             "start": results.get(name, {}).get("start"),           # exact, from the task itself

@@ -1,18 +1,6 @@
 {
+  "_note": "converted from the legacy run file (graph inline / time_scale); old: {\"scheduler\": \"heft\", \"time_scale\": 3}",
+  "instance": "graphs/slurm-staggered.json",
   "scheduler": "heft",
-  "time_scale": 3,
-  "tasks": {
-    "A": 1, "B": 4, "C": 1, "D": 2, "E": 2, "F": 1, "G": 3,
-    "H": 1, "I": 2, "J": 2, "K": 1, "L": 3, "M": 2, "N": 5
-  },
-  "dependencies": [
-    ["A", "B"], ["A", "C"], ["A", "D"], ["A", "N"],
-    ["C", "E"], ["C", "F"],
-    ["D", "G"], ["D", "M"],
-    ["E", "H"],
-    ["F", "I"], ["F", "L"],
-    ["H", "I"],
-    ["G", "J"],
-    ["B", "K"], ["I", "K"], ["J", "K"], ["L", "K"], ["M", "K"], ["N", "K"]
-  ]
+  "sec_per_cost": 3.0
 }

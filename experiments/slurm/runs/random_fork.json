@@ -1,6 +1,10 @@
 {
+  "_note": "converted from the legacy run file (graph inline / time_scale); old: {\"scheduler\": \"heft\", \"time_scale\": 10, \"nodes\": {\"cse-lambda1\": 1.0, \"cse-isha\": 0.5}, \"graph\": {\"shape\": \"fork\", \"seed\": 0, \"min_cost\": 0.2, \"max_cost\": 1.0}}",
+  "instance": "graphs/slurm-random-fork.json",
   "scheduler": "heft",
-  "time_scale": 10,
-  "nodes": {"cse-lambda1": 1.0, "cse-isha": 0.5},
-  "graph": {"shape": "fork", "seed": 0, "min_cost": 0.2, "max_cost": 1.0}
+  "sec_per_cost": 10.0,
+  "speed": {
+    "cse-lambda1": 1.0,
+    "cse-isha": 0.5
+  }
 }

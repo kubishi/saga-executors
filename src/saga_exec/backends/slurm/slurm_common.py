@@ -5,8 +5,9 @@ import time
 from pathlib import Path
 from typing import Dict, List
 
-# TODO(shared): read machines from testbed/machines.yaml (saga_exec.network.load_machines).
-NODES = ["cse-lambda1", "cse-isha"]
+from saga_exec.testbed import load_testbed
+
+NODES = load_testbed().machines      # testbed/machines.yaml (all are Slurm workers)
 RUNS_DIR = Path.home() / "slurm-logs" / "saga"
 THREADS_PER_CORE = 2                 # Slurm counts each hardware thread as a "CPU"; --cpus counts whole cores
 FINAL_STATES = {"COMPLETED", "FAILED", "CANCELLED", "TIMEOUT", "OUT_OF_MEMORY", "NODE_FAIL"}
