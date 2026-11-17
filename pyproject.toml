@@ -1,0 +1,51 @@
+[project]
+name = "saga-executors"
+version = "0.1.0"
+description = "Execute SAGA DAG schedules on real systems (Kubernetes/Wayline, Slurm) and compare predicted vs. actual makespans"
+readme = "README.md"
+authors = [
+    { name = "Jared Coleman" },
+    { name = "Nick Laus" },
+    { name = "Sebastian Lange" },
+]
+requires-python = ">=3.12"
+dependencies = [
+    "anrg-saga>=2.1.0",
+    "numpy",
+    "matplotlib",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+# The backends drive their clusters through CLIs (kubectl; sbatch/srun/scontrol),
+# not Python client libraries, so these extras are currently empty. They exist so
+# backend-specific Python deps have a home (e.g. `kubernetes`, `pyslurm`) and so
+# `uv sync --extra wayline` documents intent. See testbed/ for the external tools.
+wayline = []
+slurm = []
+
+[project.scripts]
+saga-wayline-generate = "saga_exec.backends.wayline.generate:main"
+saga-wayline-run = "saga_exec.backends.wayline.run:main"
+saga-wayline-analyze = "saga_exec.backends.wayline.analyze:main"
+saga-slurm = "saga_exec.backends.slurm.saga_slurm:main"
+saga-slurm-profile = "saga_exec.backends.slurm.profiling_test:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["uv_build>=0.10.5,<0.11.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "saga_exec"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
