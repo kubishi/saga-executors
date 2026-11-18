@@ -1,0 +1,1232 @@
+{
+ "name": "e3-genome-l-g10-lo",
+ "source": "WfCommons 1000genome/chameleon-cloud/1000genome-chameleon-4ch-250k-001.json via saga.schedulers.data.wfcommons; mean cost 10s, CCR 0.1 (target 0.1); experiments/slurm/e3/make_graphs.py",
+ "tasks": {
+  "individuals-1": 10.473744184,
+  "individuals-2": 11.239217042,
+  "individuals-3": 11.168700252,
+  "individuals-4": 10.563304646,
+  "individuals-5": 10.712618083,
+  "individuals-6": 11.014832894,
+  "individuals-7": 10.448766613,
+  "individuals-8": 11.443453535,
+  "individuals-9": 11.247910893,
+  "individuals-10": 10.476090143,
+  "individuals-11": 9.964394928,
+  "individuals-12": 10.20368282,
+  "individuals-13": 10.500101731,
+  "individuals-14": 10.341818449,
+  "individuals-15": 7.562684162,
+  "individuals-16": 7.459599931,
+  "individuals-17": 7.006277714,
+  "individuals-18": 12.547296584,
+  "individuals-19": 10.362380096,
+  "individuals-20": 11.445247505,
+  "individuals-21": 11.479746912,
+  "individuals-22": 10.387219669,
+  "individuals-23": 10.605945914,
+  "individuals-24": 12.074378704,
+  "individuals-25": 11.240459021,
+  "individuals-merge-26": 12.549642544,
+  "sifting-27": 2.097977981,
+  "individuals-28": 11.919269366,
+  "individuals-29": 11.706891013,
+  "individuals-30": 12.46836194,
+  "individuals-31": 11.975434402,
+  "individuals-32": 12.499825399,
+  "individuals-33": 12.614639428,
+  "individuals-34": 12.574206122,
+  "individuals-35": 12.438968444,
+  "individuals-36": 12.550194535,
+  "individuals-37": 11.956528727,
+  "individuals-38": 12.015039722,
+  "individuals-39": 11.956252732,
+  "individuals-40": 10.420201103,
+  "individuals-41": 9.754500532,
+  "individuals-42": 10.893394979,
+  "individuals-43": 7.313874433,
+  "individuals-44": 8.92982669,
+  "individuals-45": 9.289172521,
+  "individuals-46": 10.060165284,
+  "individuals-47": 10.221484515,
+  "individuals-48": 8.541777352,
+  "individuals-49": 8.362656427,
+  "individuals-50": 7.403710891,
+  "individuals-51": 7.180292727,
+  "individuals-52": 7.430758427,
+  "individuals-merge-53": 12.509209238,
+  "sifting-54": 0.071482773,
+  "individuals-55": 9.430206099,
+  "individuals-56": 9.424686194,
+  "individuals-57": 10.527701257,
+  "individuals-58": 10.726279848,
+  "individuals-59": 10.462014385,
+  "individuals-60": 11.90450362,
+  "individuals-61": 11.86255234,
+  "individuals-62": 11.729522624,
+  "individuals-63": 11.401364258,
+  "individuals-64": 11.45601132,
+  "individuals-65": 11.030012634,
+  "individuals-66": 10.20133686,
+  "individuals-67": 11.082589731,
+  "individuals-68": 10.657695026,
+  "individuals-69": 10.859171567,
+  "individuals-70": 9.500998884,
+  "individuals-71": 9.355549381,
+  "individuals-72": 9.585039441,
+  "individuals-73": 8.115640668,
+  "individuals-74": 8.409851617,
+  "individuals-75": 9.109913598,
+  "individuals-76": 10.590490179,
+  "individuals-77": 6.993581932,
+  "individuals-78": 7.27385512,
+  "individuals-79": 7.773820537,
+  "individuals-merge-80": 12.604151608,
+  "sifting-81": 0.052025107,
+  "individuals-82": 6.935622927,
+  "individuals-83": 6.92265115,
+  "individuals-84": 6.983094112,
+  "individuals-85": 6.972606292,
+  "individuals-86": 6.891325688,
+  "individuals-87": 6.994823911,
+  "individuals-88": 6.823844846,
+  "individuals-89": 7.026425368,
+  "individuals-90": 11.211617516,
+  "individuals-91": 11.402606237,
+  "individuals-92": 11.197541757,
+  "individuals-93": 11.201267693,
+  "individuals-94": 11.151726544,
+  "individuals-95": 10.811976377,
+  "individuals-96": 11.964946582,
+  "individuals-97": 11.409092125,
+  "individuals-98": 11.205269625,
+  "individuals-99": 11.174772148,
+  "individuals-100": 6.900157536,
+  "individuals-101": 6.849650403,
+  "individuals-102": 6.877111932,
+  "individuals-103": 11.119297101,
+  "individuals-104": 7.163319018,
+  "individuals-105": 7.193954492,
+  "individuals-106": 6.985026079,
+  "individuals-merge-107": 12.324982401,
+  "sifting-108": 0.143379538,
+  "mutation-overlap-109": 1.094597208,
+  "frequency-110": 22.080172921,
+  "mutation-overlap-111": 0.266611423,
+  "frequency-112": 21.480435218,
+  "mutation-overlap-113": 8.753741713,
+  "frequency-114": 22.856961585,
+  "mutation-overlap-115": 0.716345702,
+  "frequency-116": 21.536738251,
+  "mutation-overlap-117": 1.228592907,
+  "frequency-118": 21.518660561,
+  "mutation-overlap-119": 0.658110701,
+  "frequency-120": 21.943831262,
+  "mutation-overlap-121": 1.396122031,
+  "frequency-122": 21.644376403,
+  "mutation-overlap-123": 1.308493535,
+  "frequency-124": 22.386941654,
+  "mutation-overlap-125": 0.372731601,
+  "frequency-126": 21.801417707,
+  "mutation-overlap-127": 7.49230537,
+  "frequency-128": 20.596284397,
+  "mutation-overlap-129": 0.8387496,
+  "frequency-130": 21.341195608,
+  "mutation-overlap-131": 1.282411983,
+  "frequency-132": 21.833709152,
+  "mutation-overlap-133": 0.445318355,
+  "frequency-134": 22.308421002,
+  "mutation-overlap-135": 0.48809762,
+  "frequency-136": 22.106944462,
+  "mutation-overlap-137": 1.330711154,
+  "frequency-138": 19.513968978,
+  "mutation-overlap-139": 0.275029278,
+  "frequency-140": 12.276959226,
+  "mutation-overlap-141": 3.403573566,
+  "frequency-142": 22.056023336,
+  "mutation-overlap-143": 0.426550677,
+  "frequency-144": 22.195814936,
+  "mutation-overlap-145": 0.460912087,
+  "frequency-146": 12.770714749,
+  "mutation-overlap-147": 0.454150203,
+  "frequency-148": 19.429376431,
+  "mutation-overlap-149": 0.716621697,
+  "frequency-150": 15.838126086,
+  "mutation-overlap-151": 0.800524256,
+  "frequency-152": 17.715445856,
+  "mutation-overlap-153": 0.562616341,
+  "frequency-154": 17.225830262,
+  "mutation-overlap-155": 2.836541301,
+  "frequency-156": 17.215756435,
+  "mutation-overlap-157": 0.519423082,
+  "frequency-158": 17.121504053,
+  "mutation-overlap-159": 0.552128521,
+  "frequency-160": 17.832743842,
+  "mutation-overlap-161": 0.444628366,
+  "frequency-162": 17.178497075,
+  "mutation-overlap-163": 1.221555028,
+  "frequency-164": 18.211685336
+ },
+ "edges": [
+  [
+   "individuals-1",
+   "individuals-merge-26",
+   59860578
+  ],
+  [
+   "individuals-2",
+   "individuals-merge-26",
+   59628928
+  ],
+  [
+   "individuals-3",
+   "individuals-merge-26",
+   59635245
+  ],
+  [
+   "individuals-4",
+   "individuals-merge-26",
+   59892167
+  ],
+  [
+   "individuals-5",
+   "individuals-merge-26",
+   59786871
+  ],
+  [
+   "individuals-6",
+   "individuals-merge-26",
+   59828989
+  ],
+  [
+   "individuals-7",
+   "individuals-merge-26",
+   59879531
+  ],
+  [
+   "individuals-8",
+   "individuals-merge-26",
+   59671046
+  ],
+  [
+   "individuals-9",
+   "individuals-merge-26",
+   59551009
+  ],
+  [
+   "individuals-10",
+   "individuals-merge-26",
+   59845837
+  ],
+  [
+   "individuals-11",
+   "individuals-merge-26",
+   59776341
+  ],
+  [
+   "individuals-12",
+   "individuals-merge-26",
+   59584703
+  ],
+  [
+   "individuals-13",
+   "individuals-merge-26",
+   59911120
+  ],
+  [
+   "individuals-14",
+   "individuals-merge-26",
+   59911120
+  ],
+  [
+   "individuals-15",
+   "individuals-merge-26",
+   58590712
+  ],
+  [
+   "individuals-16",
+   "individuals-merge-26",
+   59115085
+  ],
+  [
+   "individuals-17",
+   "individuals-merge-26",
+   59601551
+  ],
+  [
+   "individuals-18",
+   "individuals-merge-26",
+   61084113
+  ],
+  [
+   "individuals-19",
+   "individuals-merge-26",
+   59879531
+  ],
+  [
+   "individuals-20",
+   "individuals-merge-26",
+   59828989
+  ],
+  [
+   "individuals-21",
+   "individuals-merge-26",
+   59569962
+  ],
+  [
+   "individuals-22",
+   "individuals-merge-26",
+   59759494
+  ],
+  [
+   "individuals-23",
+   "individuals-merge-26",
+   59932179
+  ],
+  [
+   "individuals-24",
+   "individuals-merge-26",
+   60201736
+  ],
+  [
+   "individuals-25",
+   "individuals-merge-26",
+   59466772
+  ],
+  [
+   "individuals-merge-26",
+   "mutation-overlap-109",
+   51443244
+  ],
+  [
+   "individuals-merge-26",
+   "frequency-110",
+   51443244
+  ],
+  [
+   "individuals-merge-26",
+   "mutation-overlap-111",
+   51443244
+  ],
+  [
+   "individuals-merge-26",
+   "frequency-112",
+   51443244
+  ],
+  [
+   "individuals-merge-26",
+   "mutation-overlap-113",
+   51443244
+  ],
+  [
+   "individuals-merge-26",
+   "frequency-114",
+   51443244
+  ],
+  [
+   "individuals-merge-26",
+   "mutation-overlap-115",
+   51443244
+  ],
+  [
+   "individuals-merge-26",
+   "frequency-116",
+   51443244
+  ],
+  [
+   "individuals-merge-26",
+   "mutation-overlap-117",
+   51443244
+  ],
+  [
+   "individuals-merge-26",
+   "frequency-118",
+   51443244
+  ],
+  [
+   "individuals-merge-26",
+   "mutation-overlap-119",
+   51443244
+  ],
+  [
+   "individuals-merge-26",
+   "frequency-120",
+   51443244
+  ],
+  [
+   "individuals-merge-26",
+   "mutation-overlap-121",
+   51443244
+  ],
+  [
+   "individuals-merge-26",
+   "frequency-122",
+   51443244
+  ],
+  [
+   "sifting-27",
+   "mutation-overlap-109",
+   250000000
+  ],
+  [
+   "sifting-27",
+   "frequency-110",
+   250000000
+  ],
+  [
+   "sifting-27",
+   "mutation-overlap-111",
+   250000000
+  ],
+  [
+   "sifting-27",
+   "frequency-112",
+   250000000
+  ],
+  [
+   "sifting-27",
+   "mutation-overlap-113",
+   250000000
+  ],
+  [
+   "sifting-27",
+   "frequency-114",
+   250000000
+  ],
+  [
+   "sifting-27",
+   "mutation-overlap-115",
+   250000000
+  ],
+  [
+   "sifting-27",
+   "frequency-116",
+   250000000
+  ],
+  [
+   "sifting-27",
+   "mutation-overlap-117",
+   250000000
+  ],
+  [
+   "sifting-27",
+   "frequency-118",
+   250000000
+  ],
+  [
+   "sifting-27",
+   "mutation-overlap-119",
+   250000000
+  ],
+  [
+   "sifting-27",
+   "frequency-120",
+   250000000
+  ],
+  [
+   "sifting-27",
+   "mutation-overlap-121",
+   250000000
+  ],
+  [
+   "sifting-27",
+   "frequency-122",
+   250000000
+  ],
+  [
+   "individuals-28",
+   "individuals-merge-53",
+   61180985
+  ],
+  [
+   "individuals-29",
+   "individuals-merge-53",
+   60972500
+  ],
+  [
+   "individuals-30",
+   "individuals-merge-53",
+   61376835
+  ],
+  [
+   "individuals-31",
+   "individuals-merge-53",
+   61056737
+  ],
+  [
+   "individuals-32",
+   "individuals-merge-53",
+   61107278
+  ],
+  [
+   "individuals-33",
+   "individuals-merge-53",
+   61303128
+  ],
+  [
+   "individuals-34",
+   "individuals-merge-53",
+   61132549
+  ],
+  [
+   "individuals-35",
+   "individuals-merge-53",
+   61271540
+  ],
+  [
+   "individuals-36",
+   "individuals-merge-53",
+   61267328
+  ],
+  [
+   "individuals-37",
+   "individuals-merge-53",
+   60997771
+  ],
+  [
+   "individuals-38",
+   "individuals-merge-53",
+   61136761
+  ],
+  [
+   "individuals-39",
+   "individuals-merge-53",
+   61067266
+  ],
+  [
+   "individuals-40",
+   "individuals-merge-53",
+   59824777
+  ],
+  [
+   "individuals-41",
+   "individuals-merge-53",
+   59807930
+  ],
+  [
+   "individuals-42",
+   "individuals-merge-53",
+   59700529
+  ],
+  [
+   "individuals-43",
+   "individuals-merge-53",
+   59247757
+  ],
+  [
+   "individuals-44",
+   "individuals-merge-53",
+   59072966
+  ],
+  [
+   "individuals-45",
+   "individuals-merge-53",
+   58820257
+  ],
+  [
+   "individuals-46",
+   "individuals-merge-53",
+   59805824
+  ],
+  [
+   "individuals-47",
+   "individuals-merge-53",
+   59719482
+  ],
+  [
+   "individuals-48",
+   "individuals-merge-53",
+   59673152
+  ],
+  [
+   "individuals-49",
+   "individuals-merge-53",
+   59732117
+  ],
+  [
+   "individuals-50",
+   "individuals-merge-53",
+   59159309
+  ],
+  [
+   "individuals-51",
+   "individuals-merge-53",
+   58948718
+  ],
+  [
+   "individuals-52",
+   "individuals-merge-53",
+   59243545
+  ],
+  [
+   "individuals-merge-53",
+   "mutation-overlap-123",
+   51495891
+  ],
+  [
+   "individuals-merge-53",
+   "frequency-124",
+   51495891
+  ],
+  [
+   "individuals-merge-53",
+   "mutation-overlap-125",
+   51495891
+  ],
+  [
+   "individuals-merge-53",
+   "frequency-126",
+   51495891
+  ],
+  [
+   "individuals-merge-53",
+   "mutation-overlap-127",
+   51495891
+  ],
+  [
+   "individuals-merge-53",
+   "frequency-128",
+   51495891
+  ],
+  [
+   "individuals-merge-53",
+   "mutation-overlap-129",
+   51495891
+  ],
+  [
+   "individuals-merge-53",
+   "frequency-130",
+   51495891
+  ],
+  [
+   "individuals-merge-53",
+   "mutation-overlap-131",
+   51495891
+  ],
+  [
+   "individuals-merge-53",
+   "frequency-132",
+   51495891
+  ],
+  [
+   "individuals-merge-53",
+   "mutation-overlap-133",
+   51495891
+  ],
+  [
+   "individuals-merge-53",
+   "frequency-134",
+   51495891
+  ],
+  [
+   "individuals-merge-53",
+   "mutation-overlap-135",
+   51495891
+  ],
+  [
+   "individuals-merge-53",
+   "frequency-136",
+   51495891
+  ],
+  [
+   "sifting-54",
+   "mutation-overlap-123",
+   250000000
+  ],
+  [
+   "sifting-54",
+   "frequency-124",
+   250000000
+  ],
+  [
+   "sifting-54",
+   "mutation-overlap-125",
+   250000000
+  ],
+  [
+   "sifting-54",
+   "frequency-126",
+   250000000
+  ],
+  [
+   "sifting-54",
+   "mutation-overlap-127",
+   250000000
+  ],
+  [
+   "sifting-54",
+   "frequency-128",
+   250000000
+  ],
+  [
+   "sifting-54",
+   "mutation-overlap-129",
+   250000000
+  ],
+  [
+   "sifting-54",
+   "frequency-130",
+   250000000
+  ],
+  [
+   "sifting-54",
+   "mutation-overlap-131",
+   250000000
+  ],
+  [
+   "sifting-54",
+   "frequency-132",
+   250000000
+  ],
+  [
+   "sifting-54",
+   "mutation-overlap-133",
+   250000000
+  ],
+  [
+   "sifting-54",
+   "frequency-134",
+   250000000
+  ],
+  [
+   "sifting-54",
+   "mutation-overlap-135",
+   250000000
+  ],
+  [
+   "sifting-54",
+   "frequency-136",
+   250000000
+  ],
+  [
+   "individuals-55",
+   "individuals-merge-80",
+   60391268
+  ],
+  [
+   "individuals-56",
+   "individuals-merge-80",
+   60389162
+  ],
+  [
+   "individuals-57",
+   "individuals-merge-80",
+   61105173
+  ],
+  [
+   "individuals-58",
+   "individuals-merge-80",
+   61100961
+  ],
+  [
+   "individuals-59",
+   "individuals-merge-80",
+   60974606
+  ],
+  [
+   "individuals-60",
+   "individuals-merge-80",
+   61435801
+  ],
+  [
+   "individuals-61",
+   "individuals-merge-80",
+   61511614
+  ],
+  [
+   "individuals-62",
+   "individuals-merge-80",
+   61541097
+  ],
+  [
+   "individuals-63",
+   "individuals-merge-80",
+   61591638
+  ],
+  [
+   "individuals-64",
+   "individuals-merge-80",
+   61513720
+  ],
+  [
+   "individuals-65",
+   "individuals-merge-80",
+   61311552
+  ],
+  [
+   "individuals-66",
+   "individuals-merge-80",
+   60766121
+  ],
+  [
+   "individuals-67",
+   "individuals-merge-80",
+   61292599
+  ],
+  [
+   "individuals-68",
+   "individuals-merge-80",
+   61229421
+  ],
+  [
+   "individuals-69",
+   "individuals-merge-80",
+   61313658
+  ],
+  [
+   "individuals-70",
+   "individuals-merge-80",
+   60370209
+  ],
+  [
+   "individuals-71",
+   "individuals-merge-80",
+   60446022
+  ],
+  [
+   "individuals-72",
+   "individuals-merge-80",
+   59727905
+  ],
+  [
+   "individuals-73",
+   "individuals-merge-80",
+   59551009
+  ],
+  [
+   "individuals-74",
+   "individuals-merge-80",
+   59812142
+  ],
+  [
+   "individuals-75",
+   "individuals-merge-80",
+   59618398
+  ],
+  [
+   "individuals-76",
+   "individuals-merge-80",
+   60909323
+  ],
+  [
+   "individuals-77",
+   "individuals-merge-80",
+   59416230
+  ],
+  [
+   "individuals-78",
+   "individuals-merge-80",
+   59473090
+  ],
+  [
+   "individuals-79",
+   "individuals-merge-80",
+   58845528
+  ],
+  [
+   "individuals-merge-80",
+   "mutation-overlap-137",
+   51586446
+  ],
+  [
+   "individuals-merge-80",
+   "frequency-138",
+   51586446
+  ],
+  [
+   "individuals-merge-80",
+   "mutation-overlap-139",
+   51586446
+  ],
+  [
+   "individuals-merge-80",
+   "frequency-140",
+   51586446
+  ],
+  [
+   "individuals-merge-80",
+   "mutation-overlap-141",
+   51586446
+  ],
+  [
+   "individuals-merge-80",
+   "frequency-142",
+   51586446
+  ],
+  [
+   "individuals-merge-80",
+   "mutation-overlap-143",
+   51586446
+  ],
+  [
+   "individuals-merge-80",
+   "frequency-144",
+   51586446
+  ],
+  [
+   "individuals-merge-80",
+   "mutation-overlap-145",
+   51586446
+  ],
+  [
+   "individuals-merge-80",
+   "frequency-146",
+   51586446
+  ],
+  [
+   "individuals-merge-80",
+   "mutation-overlap-147",
+   51586446
+  ],
+  [
+   "individuals-merge-80",
+   "frequency-148",
+   51586446
+  ],
+  [
+   "individuals-merge-80",
+   "mutation-overlap-149",
+   51586446
+  ],
+  [
+   "individuals-merge-80",
+   "frequency-150",
+   51586446
+  ],
+  [
+   "sifting-81",
+   "mutation-overlap-137",
+   250000000
+  ],
+  [
+   "sifting-81",
+   "frequency-138",
+   250000000
+  ],
+  [
+   "sifting-81",
+   "mutation-overlap-139",
+   250000000
+  ],
+  [
+   "sifting-81",
+   "frequency-140",
+   250000000
+  ],
+  [
+   "sifting-81",
+   "mutation-overlap-141",
+   250000000
+  ],
+  [
+   "sifting-81",
+   "frequency-142",
+   250000000
+  ],
+  [
+   "sifting-81",
+   "mutation-overlap-143",
+   250000000
+  ],
+  [
+   "sifting-81",
+   "frequency-144",
+   250000000
+  ],
+  [
+   "sifting-81",
+   "mutation-overlap-145",
+   250000000
+  ],
+  [
+   "sifting-81",
+   "frequency-146",
+   250000000
+  ],
+  [
+   "sifting-81",
+   "mutation-overlap-147",
+   250000000
+  ],
+  [
+   "sifting-81",
+   "frequency-148",
+   250000000
+  ],
+  [
+   "sifting-81",
+   "mutation-overlap-149",
+   250000000
+  ],
+  [
+   "sifting-81",
+   "frequency-150",
+   250000000
+  ],
+  [
+   "individuals-82",
+   "individuals-merge-107",
+   58129517
+  ],
+  [
+   "individuals-83",
+   "individuals-merge-107",
+   58161106
+  ],
+  [
+   "individuals-84",
+   "individuals-merge-107",
+   58057916
+  ],
+  [
+   "individuals-85",
+   "individuals-merge-107",
+   58001057
+  ],
+  [
+   "individuals-86",
+   "individuals-merge-107",
+   58133729
+  ],
+  [
+   "individuals-87",
+   "individuals-merge-107",
+   58108458
+  ],
+  [
+   "individuals-88",
+   "individuals-merge-107",
+   58148471
+  ],
+  [
+   "individuals-89",
+   "individuals-merge-107",
+   58095823
+  ],
+  [
+   "individuals-90",
+   "individuals-merge-107",
+   59770024
+  ],
+  [
+   "individuals-91",
+   "individuals-merge-107",
+   60073275
+  ],
+  [
+   "individuals-92",
+   "individuals-merge-107",
+   59946920
+  ],
+  [
+   "individuals-93",
+   "individuals-merge-107",
+   59957450
+  ],
+  [
+   "individuals-94",
+   "individuals-merge-107",
+   60073275
+  ],
+  [
+   "individuals-95",
+   "individuals-merge-107",
+   59696317
+  ],
+  [
+   "individuals-96",
+   "individuals-merge-107",
+   59989039
+  ],
+  [
+   "individuals-97",
+   "individuals-merge-107",
+   60115393
+  ],
+  [
+   "individuals-98",
+   "individuals-merge-107",
+   59999568
+  ],
+  [
+   "individuals-99",
+   "individuals-merge-107",
+   59626822
+  ],
+  [
+   "individuals-100",
+   "individuals-merge-107",
+   58095823
+  ],
+  [
+   "individuals-101",
+   "individuals-merge-107",
+   58180059
+  ],
+  [
+   "individuals-102",
+   "individuals-merge-107",
+   58173742
+  ],
+  [
+   "individuals-103",
+   "individuals-merge-107",
+   60071169
+  ],
+  [
+   "individuals-104",
+   "individuals-merge-107",
+   58331685
+  ],
+  [
+   "individuals-105",
+   "individuals-merge-107",
+   58302202
+  ],
+  [
+   "individuals-106",
+   "individuals-merge-107",
+   58112670
+  ],
+  [
+   "individuals-merge-107",
+   "mutation-overlap-151",
+   53087962
+  ],
+  [
+   "individuals-merge-107",
+   "frequency-152",
+   53087962
+  ],
+  [
+   "individuals-merge-107",
+   "mutation-overlap-153",
+   53087962
+  ],
+  [
+   "individuals-merge-107",
+   "frequency-154",
+   53087962
+  ],
+  [
+   "individuals-merge-107",
+   "mutation-overlap-155",
+   53087962
+  ],
+  [
+   "individuals-merge-107",
+   "frequency-156",
+   53087962
+  ],
+  [
+   "individuals-merge-107",
+   "mutation-overlap-157",
+   53087962
+  ],
+  [
+   "individuals-merge-107",
+   "frequency-158",
+   53087962
+  ],
+  [
+   "individuals-merge-107",
+   "mutation-overlap-159",
+   53087962
+  ],
+  [
+   "individuals-merge-107",
+   "frequency-160",
+   53087962
+  ],
+  [
+   "individuals-merge-107",
+   "mutation-overlap-161",
+   53087962
+  ],
+  [
+   "individuals-merge-107",
+   "frequency-162",
+   53087962
+  ],
+  [
+   "individuals-merge-107",
+   "mutation-overlap-163",
+   53087962
+  ],
+  [
+   "individuals-merge-107",
+   "frequency-164",
+   53087962
+  ],
+  [
+   "sifting-108",
+   "mutation-overlap-151",
+   250000000
+  ],
+  [
+   "sifting-108",
+   "frequency-152",
+   250000000
+  ],
+  [
+   "sifting-108",
+   "mutation-overlap-153",
+   250000000
+  ],
+  [
+   "sifting-108",
+   "frequency-154",
+   250000000
+  ],
+  [
+   "sifting-108",
+   "mutation-overlap-155",
+   250000000
+  ],
+  [
+   "sifting-108",
+   "frequency-156",
+   250000000
+  ],
+  [
+   "sifting-108",
+   "mutation-overlap-157",
+   250000000
+  ],
+  [
+   "sifting-108",
+   "frequency-158",
+   250000000
+  ],
+  [
+   "sifting-108",
+   "mutation-overlap-159",
+   250000000
+  ],
+  [
+   "sifting-108",
+   "frequency-160",
+   250000000
+  ],
+  [
+   "sifting-108",
+   "mutation-overlap-161",
+   250000000
+  ],
+  [
+   "sifting-108",
+   "frequency-162",
+   250000000
+  ],
+  [
+   "sifting-108",
+   "mutation-overlap-163",
+   250000000
+  ],
+  [
+   "sifting-108",
+   "frequency-164",
+   250000000
+  ]
+ ]
+}

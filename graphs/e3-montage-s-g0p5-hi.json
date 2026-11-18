@@ -1,0 +1,636 @@
+{
+ "name": "e3-montage-s-g0p5-hi",
+ "source": "WfCommons montage/chameleon-cloud/montage-chameleon-2mass-005d-001.json via saga.schedulers.data.wfcommons; mean cost 0.5s, CCR 1 (target 1.0); experiments/slurm/e3/make_graphs.py",
+ "tasks": {
+  "mproject-1": 2.185796884,
+  "mproject-2": 2.343270523,
+  "mproject-3": 2.188805102,
+  "mproject-4": 2.333199535,
+  "mdifffit-5": 0.012032869,
+  "mdifffit-6": 0.018310888,
+  "mdifffit-7": 0.050093358,
+  "mdifffit-8": 0.106987904,
+  "mdifffit-9": 0.014125542,
+  "mdifffit-10": 0.016479799,
+  "mconcatfit-11": 0.025504451,
+  "mbgmodel-12": 0.095478203,
+  "mbackground-13": 0.084230086,
+  "mbackground-14": 0.049308606,
+  "mbackground-15": 0.042507419,
+  "mbackground-16": 0.044600092,
+  "mimgtbl-17": 0.022103858,
+  "madd-18": 0.023804155,
+  "mviewer-19": 0.012294454,
+  "mproject-20": 2.177033817,
+  "mproject-21": 2.433386251,
+  "mproject-22": 2.159769265,
+  "mproject-23": 2.351118047,
+  "mdifffit-24": 0.012556038,
+  "mdifffit-25": 0.072197216,
+  "mdifffit-26": 0.019749601,
+  "mdifffit-27": 0.012817622,
+  "mdifffit-28": 0.112088794,
+  "mdifffit-29": 0.014910295,
+  "mconcatfit-30": 0.024065739,
+  "mbgmodel-31": 0.108818993,
+  "mbackground-32": 0.046823557,
+  "mbackground-33": 0.038583657,
+  "mbackground-34": 0.037668113,
+  "mbackground-35": 0.039106826,
+  "mimgtbl-36": 0.02223465,
+  "madd-37": 0.023934947,
+  "mviewer-38": 0.012294454,
+  "mproject-39": 2.006873348,
+  "mproject-40": 2.451566348,
+  "mproject-41": 2.05526641,
+  "mproject-42": 2.463337633,
+  "mdifffit-43": 0.01778772,
+  "mdifffit-44": 0.013733166,
+  "mdifffit-45": 0.063826525,
+  "mdifffit-46": 0.061864644,
+  "mdifffit-47": 0.013471582,
+  "mdifffit-48": 0.011640493,
+  "mconcatfit-49": 0.025242867,
+  "mbgmodel-50": 0.104633647,
+  "mbackground-51": 0.068796623,
+  "mbackground-52": 0.033613559,
+  "mbackground-53": 0.070235336,
+  "mbackground-54": 0.067488702,
+  "mimgtbl-55": 0.020665145,
+  "madd-56": 0.024065739,
+  "mviewer-57": 0.012817622,
+  "mviewer-58": 0.024981283
+ },
+ "edges": [
+  [
+   "mproject-1",
+   "mdifffit-5",
+   93039873
+  ],
+  [
+   "mproject-1",
+   "mdifffit-6",
+   93039873
+  ],
+  [
+   "mproject-1",
+   "mdifffit-7",
+   93039873
+  ],
+  [
+   "mproject-1",
+   "mbackground-13",
+   93039873
+  ],
+  [
+   "mproject-2",
+   "mdifffit-5",
+   92846175
+  ],
+  [
+   "mproject-2",
+   "mdifffit-8",
+   92846175
+  ],
+  [
+   "mproject-2",
+   "mdifffit-9",
+   92846175
+  ],
+  [
+   "mproject-2",
+   "mbackground-14",
+   92846175
+  ],
+  [
+   "mproject-3",
+   "mdifffit-6",
+   92846175
+  ],
+  [
+   "mproject-3",
+   "mdifffit-8",
+   92846175
+  ],
+  [
+   "mproject-3",
+   "mdifffit-10",
+   92846175
+  ],
+  [
+   "mproject-3",
+   "mbackground-15",
+   92846175
+  ],
+  [
+   "mproject-4",
+   "mdifffit-7",
+   93039873
+  ],
+  [
+   "mproject-4",
+   "mdifffit-9",
+   93039873
+  ],
+  [
+   "mproject-4",
+   "mdifffit-10",
+   93039873
+  ],
+  [
+   "mproject-4",
+   "mbackground-16",
+   93039873
+  ],
+  [
+   "mdifffit-5",
+   "mconcatfit-11",
+   2903
+  ],
+  [
+   "mdifffit-6",
+   "mconcatfit-11",
+   2926
+  ],
+  [
+   "mdifffit-7",
+   "mconcatfit-11",
+   2993
+  ],
+  [
+   "mdifffit-8",
+   "mconcatfit-11",
+   2959
+  ],
+  [
+   "mdifffit-9",
+   "mconcatfit-11",
+   2903
+  ],
+  [
+   "mdifffit-10",
+   "mconcatfit-11",
+   2914
+  ],
+  [
+   "mconcatfit-11",
+   "mbgmodel-12",
+   16332
+  ],
+  [
+   "mbgmodel-12",
+   "mbackground-13",
+   3094
+  ],
+  [
+   "mbgmodel-12",
+   "mbackground-14",
+   3094
+  ],
+  [
+   "mbgmodel-12",
+   "mbackground-15",
+   3094
+  ],
+  [
+   "mbgmodel-12",
+   "mbackground-16",
+   3094
+  ],
+  [
+   "mbackground-13",
+   "mimgtbl-17",
+   46519937
+  ],
+  [
+   "mbackground-13",
+   "madd-18",
+   93039873
+  ],
+  [
+   "mbackground-14",
+   "mimgtbl-17",
+   46423087
+  ],
+  [
+   "mbackground-14",
+   "madd-18",
+   92846175
+  ],
+  [
+   "mbackground-15",
+   "mimgtbl-17",
+   46423087
+  ],
+  [
+   "mbackground-15",
+   "madd-18",
+   92846175
+  ],
+  [
+   "mbackground-16",
+   "mimgtbl-17",
+   46519937
+  ],
+  [
+   "mbackground-16",
+   "madd-18",
+   93039873
+  ],
+  [
+   "mimgtbl-17",
+   "madd-18",
+   29548
+  ],
+  [
+   "madd-18",
+   "mviewer-19",
+   2937761
+  ],
+  [
+   "madd-18",
+   "mviewer-58",
+   2937761
+  ],
+  [
+   "mproject-20",
+   "mdifffit-24",
+   93233572
+  ],
+  [
+   "mproject-20",
+   "mdifffit-25",
+   93233572
+  ],
+  [
+   "mproject-20",
+   "mdifffit-26",
+   93233572
+  ],
+  [
+   "mproject-20",
+   "mbackground-32",
+   93233572
+  ],
+  [
+   "mproject-21",
+   "mdifffit-24",
+   93233572
+  ],
+  [
+   "mproject-21",
+   "mdifffit-27",
+   93233572
+  ],
+  [
+   "mproject-21",
+   "mdifffit-28",
+   93233572
+  ],
+  [
+   "mproject-21",
+   "mbackground-33",
+   93233572
+  ],
+  [
+   "mproject-22",
+   "mdifffit-25",
+   93233572
+  ],
+  [
+   "mproject-22",
+   "mdifffit-27",
+   93233572
+  ],
+  [
+   "mproject-22",
+   "mdifffit-29",
+   93233572
+  ],
+  [
+   "mproject-22",
+   "mbackground-34",
+   93233572
+  ],
+  [
+   "mproject-23",
+   "mdifffit-26",
+   93362704
+  ],
+  [
+   "mproject-23",
+   "mdifffit-28",
+   93362704
+  ],
+  [
+   "mproject-23",
+   "mdifffit-29",
+   93362704
+  ],
+  [
+   "mproject-23",
+   "mbackground-35",
+   93362704
+  ],
+  [
+   "mdifffit-24",
+   "mconcatfit-30",
+   2937
+  ],
+  [
+   "mdifffit-25",
+   "mconcatfit-30",
+   2948
+  ],
+  [
+   "mdifffit-26",
+   "mconcatfit-30",
+   2903
+  ],
+  [
+   "mdifffit-27",
+   "mconcatfit-30",
+   2926
+  ],
+  [
+   "mdifffit-28",
+   "mconcatfit-30",
+   2982
+  ],
+  [
+   "mdifffit-29",
+   "mconcatfit-30",
+   2881
+  ],
+  [
+   "mconcatfit-30",
+   "mbgmodel-31",
+   16332
+  ],
+  [
+   "mbgmodel-31",
+   "mbackground-32",
+   3094
+  ],
+  [
+   "mbgmodel-31",
+   "mbackground-33",
+   3094
+  ],
+  [
+   "mbgmodel-31",
+   "mbackground-34",
+   3094
+  ],
+  [
+   "mbgmodel-31",
+   "mbackground-35",
+   3094
+  ],
+  [
+   "mbackground-32",
+   "mimgtbl-36",
+   46616786
+  ],
+  [
+   "mbackground-32",
+   "madd-37",
+   93233572
+  ],
+  [
+   "mbackground-33",
+   "mimgtbl-36",
+   46616786
+  ],
+  [
+   "mbackground-33",
+   "madd-37",
+   93233572
+  ],
+  [
+   "mbackground-34",
+   "mimgtbl-36",
+   46616786
+  ],
+  [
+   "mbackground-34",
+   "madd-37",
+   93233572
+  ],
+  [
+   "mbackground-35",
+   "mimgtbl-36",
+   46681352
+  ],
+  [
+   "mbackground-35",
+   "madd-37",
+   93362704
+  ],
+  [
+   "mimgtbl-36",
+   "madd-37",
+   29548
+  ],
+  [
+   "madd-37",
+   "mviewer-38",
+   2937761
+  ],
+  [
+   "madd-37",
+   "mviewer-58",
+   2937761
+  ],
+  [
+   "mproject-39",
+   "mdifffit-43",
+   92846175
+  ],
+  [
+   "mproject-39",
+   "mdifffit-44",
+   92846175
+  ],
+  [
+   "mproject-39",
+   "mdifffit-45",
+   92846175
+  ],
+  [
+   "mproject-39",
+   "mbackground-51",
+   92846175
+  ],
+  [
+   "mproject-40",
+   "mdifffit-43",
+   92846175
+  ],
+  [
+   "mproject-40",
+   "mdifffit-46",
+   92846175
+  ],
+  [
+   "mproject-40",
+   "mdifffit-47",
+   92846175
+  ],
+  [
+   "mproject-40",
+   "mbackground-52",
+   92846175
+  ],
+  [
+   "mproject-41",
+   "mdifffit-44",
+   92652476
+  ],
+  [
+   "mproject-41",
+   "mdifffit-46",
+   92652476
+  ],
+  [
+   "mproject-41",
+   "mdifffit-48",
+   92652476
+  ],
+  [
+   "mproject-41",
+   "mbackground-53",
+   92652476
+  ],
+  [
+   "mproject-42",
+   "mdifffit-45",
+   92846175
+  ],
+  [
+   "mproject-42",
+   "mdifffit-47",
+   92846175
+  ],
+  [
+   "mproject-42",
+   "mdifffit-48",
+   92846175
+  ],
+  [
+   "mproject-42",
+   "mbackground-54",
+   92846175
+  ],
+  [
+   "mdifffit-43",
+   "mconcatfit-49",
+   2914
+  ],
+  [
+   "mdifffit-44",
+   "mconcatfit-49",
+   2937
+  ],
+  [
+   "mdifffit-45",
+   "mconcatfit-49",
+   2970
+  ],
+  [
+   "mdifffit-46",
+   "mconcatfit-49",
+   2948
+  ],
+  [
+   "mdifffit-47",
+   "mconcatfit-49",
+   2948
+  ],
+  [
+   "mdifffit-48",
+   "mconcatfit-49",
+   2937
+  ],
+  [
+   "mconcatfit-49",
+   "mbgmodel-50",
+   16332
+  ],
+  [
+   "mbgmodel-50",
+   "mbackground-51",
+   3094
+  ],
+  [
+   "mbgmodel-50",
+   "mbackground-52",
+   3094
+  ],
+  [
+   "mbgmodel-50",
+   "mbackground-53",
+   3094
+  ],
+  [
+   "mbgmodel-50",
+   "mbackground-54",
+   3094
+  ],
+  [
+   "mbackground-51",
+   "mimgtbl-55",
+   46423087
+  ],
+  [
+   "mbackground-51",
+   "madd-56",
+   92846175
+  ],
+  [
+   "mbackground-52",
+   "mimgtbl-55",
+   46423087
+  ],
+  [
+   "mbackground-52",
+   "madd-56",
+   92846175
+  ],
+  [
+   "mbackground-53",
+   "mimgtbl-55",
+   46326238
+  ],
+  [
+   "mbackground-53",
+   "madd-56",
+   92652476
+  ],
+  [
+   "mbackground-54",
+   "mimgtbl-55",
+   46423087
+  ],
+  [
+   "mbackground-54",
+   "madd-56",
+   92846175
+  ],
+  [
+   "mimgtbl-55",
+   "madd-56",
+   29548
+  ],
+  [
+   "madd-56",
+   "mviewer-57",
+   2937761
+  ],
+  [
+   "madd-56",
+   "mviewer-58",
+   2937761
+  ]
+ ]
+}

@@ -1,0 +1,289 @@
+{
+ "name": "e3-epigenomics-s-g0p5-lo",
+ "source": "WfCommons epigenomics/chameleon-cloud/epigenomics-chameleon-hep-1seq-100k-001.json via saga.schedulers.data.wfcommons; mean cost 0.5s, CCR 0.1 (target 0.1); experiments/slurm/e3/make_graphs.py",
+ "tasks": {
+  "chr21-1": 0.10544458,
+  "fast2bfq-2": 0.020640377,
+  "fast2bfq-3": 0.020716401,
+  "fast2bfq-4": 0.026114069,
+  "fast2bfq-5": 0.023605293,
+  "fast2bfq-6": 0.023263188,
+  "fast2bfq-7": 0.020450319,
+  "fast2bfq-8": 0.020184236,
+  "fast2bfq-9": 0.031967877,
+  "fast2bfq-10": 0.009008783,
+  "fastqsplit-11": 0.051125797,
+  "filtercontams-12": 0.026266116,
+  "filtercontams-13": 0.02615208,
+  "filtercontams-14": 0.026684245,
+  "filtercontams-15": 0.026304127,
+  "filtercontams-16": 0.026190092,
+  "filtercontams-17": 0.026266116,
+  "filtercontams-18": 0.026266116,
+  "filtercontams-19": 0.043181342,
+  "filtercontams-20": 0.019538037,
+  "mapmerge-21": 0.121713607,
+  "mapmerge-22": 0.214272205,
+  "map-23": 2.26998537,
+  "map-24": 1.937344592,
+  "map-25": 2.083613786,
+  "map-26": 2.213043777,
+  "map-27": 2.185257191,
+  "map-28": 2.167771789,
+  "map-29": 2.134625547,
+  "map-30": 1.986911907,
+  "map-31": 1.291030897,
+  "pileup-32": 1.160118448,
+  "sol2sanger-33": 0.014900604,
+  "sol2sanger-34": 0.019576049,
+  "sol2sanger-35": 0.011593582,
+  "sol2sanger-36": 0.02440354,
+  "sol2sanger-37": 0.010529253,
+  "sol2sanger-38": 0.005777785,
+  "sol2sanger-39": 0.017827508,
+  "sol2sanger-40": 0.022731023,
+  "sol2sanger-41": 0.007602349
+ },
+ "edges": [
+  [
+   "chr21-1",
+   "pileup-32",
+   6583691
+  ],
+  [
+   "fast2bfq-2",
+   "map-23",
+   1743849
+  ],
+  [
+   "fast2bfq-3",
+   "map-24",
+   1704844
+  ],
+  [
+   "fast2bfq-4",
+   "map-25",
+   1670719
+  ],
+  [
+   "fast2bfq-5",
+   "map-26",
+   1677342
+  ],
+  [
+   "fast2bfq-6",
+   "map-27",
+   1726736
+  ],
+  [
+   "fast2bfq-7",
+   "map-28",
+   1762127
+  ],
+  [
+   "fast2bfq-8",
+   "map-29",
+   1676046
+  ],
+  [
+   "fast2bfq-9",
+   "map-30",
+   1608934
+  ],
+  [
+   "fast2bfq-10",
+   "map-31",
+   554427
+  ],
+  [
+   "fastqsplit-11",
+   "filtercontams-12",
+   9492252
+  ],
+  [
+   "fastqsplit-11",
+   "filtercontams-13",
+   9528679
+  ],
+  [
+   "fastqsplit-11",
+   "filtercontams-14",
+   9571510
+  ],
+  [
+   "fastqsplit-11",
+   "filtercontams-15",
+   9664682
+  ],
+  [
+   "fastqsplit-11",
+   "filtercontams-16",
+   9665832
+  ],
+  [
+   "fastqsplit-11",
+   "filtercontams-17",
+   9665603
+  ],
+  [
+   "fastqsplit-11",
+   "filtercontams-18",
+   9664183
+  ],
+  [
+   "fastqsplit-11",
+   "filtercontams-19",
+   9663146
+  ],
+  [
+   "fastqsplit-11",
+   "filtercontams-20",
+   3363841
+  ],
+  [
+   "filtercontams-12",
+   "sol2sanger-33",
+   9190123
+  ],
+  [
+   "filtercontams-13",
+   "sol2sanger-34",
+   9249318
+  ],
+  [
+   "filtercontams-14",
+   "sol2sanger-35",
+   9296726
+  ],
+  [
+   "filtercontams-15",
+   "sol2sanger-36",
+   9486548
+  ],
+  [
+   "filtercontams-16",
+   "sol2sanger-37",
+   9474141
+  ],
+  [
+   "filtercontams-17",
+   "sol2sanger-38",
+   9465270
+  ],
+  [
+   "filtercontams-18",
+   "sol2sanger-39",
+   9365251
+  ],
+  [
+   "filtercontams-19",
+   "sol2sanger-40",
+   9363066
+  ],
+  [
+   "filtercontams-20",
+   "sol2sanger-41",
+   3254590
+  ],
+  [
+   "mapmerge-21",
+   "chr21-1",
+   6583691
+  ],
+  [
+   "mapmerge-22",
+   "mapmerge-21",
+   6583691
+  ],
+  [
+   "map-23",
+   "mapmerge-22",
+   921034
+  ],
+  [
+   "map-24",
+   "mapmerge-22",
+   858787
+  ],
+  [
+   "map-25",
+   "mapmerge-22",
+   821199
+  ],
+  [
+   "map-26",
+   "mapmerge-22",
+   793866
+  ],
+  [
+   "map-27",
+   "mapmerge-22",
+   848680
+  ],
+  [
+   "map-28",
+   "mapmerge-22",
+   907453
+  ],
+  [
+   "map-29",
+   "mapmerge-22",
+   810448
+  ],
+  [
+   "map-30",
+   "mapmerge-22",
+   740682
+  ],
+  [
+   "map-31",
+   "mapmerge-22",
+   260043
+  ],
+  [
+   "sol2sanger-33",
+   "fast2bfq-2",
+   7080926
+  ],
+  [
+   "sol2sanger-34",
+   "fast2bfq-3",
+   7116994
+  ],
+  [
+   "sol2sanger-35",
+   "fast2bfq-4",
+   7142059
+  ],
+  [
+   "sol2sanger-36",
+   "fast2bfq-5",
+   7263570
+  ],
+  [
+   "sol2sanger-37",
+   "fast2bfq-6",
+   7253772
+  ],
+  [
+   "sol2sanger-38",
+   "fast2bfq-7",
+   7247052
+  ],
+  [
+   "sol2sanger-39",
+   "fast2bfq-8",
+   7170878
+  ],
+  [
+   "sol2sanger-40",
+   "fast2bfq-9",
+   7169477
+  ],
+  [
+   "sol2sanger-41",
+   "fast2bfq-10",
+   2492223
+  ]
+ ]
+}

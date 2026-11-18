@@ -1,0 +1,11 @@
+{
+  "_note": "E3: epigenomics l, granularity 0.5s, CCR hi (1.0); made by experiments/slurm/e3/make_graphs.py",
+  "instance": "graphs/e3-epigenomics-l-g0p5-hi.json",
+  "scheduler": "cpop",
+  "enact_order": "order",
+  "sec_per_cost": 1.0,
+  "bytes_per_size": 1.0,
+  "mode": "cpu",
+  "transport": "direct",
+  "mem": "2G"
+}

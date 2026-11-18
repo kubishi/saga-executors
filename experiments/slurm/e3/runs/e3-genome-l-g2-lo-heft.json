@@ -1,0 +1,11 @@
+{
+  "_note": "E3: genome l, granularity 2s, CCR lo (0.1); made by experiments/slurm/e3/make_graphs.py",
+  "instance": "graphs/e3-genome-l-g2-lo.json",
+  "scheduler": "heft",
+  "enact_order": "order",
+  "sec_per_cost": 1.0,
+  "bytes_per_size": 1.0,
+  "mode": "cpu",
+  "transport": "direct",
+  "mem": "2G"
+}

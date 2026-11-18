@@ -34,3 +34,6 @@ not a per-transfer latency.
 **Hypothesis for E3** (PI): for large, complex workflows modelling this
 overhead adds complexity for little benefit. Expected to depend on task
 granularity (runtime vs ~110 ms), not just workflow size.
+
+**E3** (built, not run yet): WfCommons workflows x granularity x CCR x HEFT/CPOP, with
+offline model variants (links, launch overhead, stagger, serialized I/O); see `e3/README.md`.

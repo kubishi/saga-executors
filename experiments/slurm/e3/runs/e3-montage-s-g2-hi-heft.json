@@ -1,0 +1,11 @@
+{
+  "_note": "E3: montage s, granularity 2s, CCR hi (1.0); made by experiments/slurm/e3/make_graphs.py",
+  "instance": "graphs/e3-montage-s-g2-hi.json",
+  "scheduler": "heft",
+  "enact_order": "order",
+  "sec_per_cost": 1.0,
+  "bytes_per_size": 1.0,
+  "mode": "cpu",
+  "transport": "direct",
+  "mem": "2G"
+}
