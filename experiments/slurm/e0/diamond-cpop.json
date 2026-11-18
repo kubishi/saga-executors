@@ -1,0 +1,9 @@
+{
+  "_note": "E0: sanity + baseline overhead. Sleep mode, no data, equal speeds.",
+  "instance": "graphs/slurm-diamond.json",
+  "scheduler": "cpop",
+  "sec_per_cost": 1.0,
+  "speed": {"cse-lambda1": 1.0, "cse-isha": 1.0},
+  "mode": "sleep",
+  "transport": "direct"
+}
