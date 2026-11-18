@@ -85,6 +85,7 @@ def allocation_files(run_id: str, run_dir: Path, tasks: Dict[str, dict],
         "shared_dir": shared_run_dir(config.workdir, run_id) if config.transport == "shared_fs" else None,
         "latency_wait": float(config.latency_wait),
         "keep_data": bool(config.keep_data),
+        "clock_probe": bool(getattr(config, "clock_probe", True)),   # measurement only (driver.py)
         "mode": config.mode,
         "hash_rate": config.hash_rate,
         "speed": config.machine_speed,
@@ -187,5 +188,7 @@ def measured_from_results(results: Dict[str, dict], tasks: Dict[str, dict], job_
             "compute": timings.get("computeSeconds"),
             "handoff": timings.get("handoffSeconds"),
             "timings": timings,
+            "launch": r.get("launch"),             # driver's clock: step launched
+            "finish": r.get("finish"),             # driver's clock: step exit noticed
         }
     return measured

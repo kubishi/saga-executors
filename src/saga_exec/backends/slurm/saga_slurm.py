@@ -39,8 +39,10 @@ from typing import Dict, List
 
 from saga import ScheduledTask
 
+from saga_exec.actual import build_actual
 from saga_exec.backends.slurm.allocation import allocation_files, run_allocation
 from saga_exec.backends.slurm.slurm_common import RUNS_DIR
+from saga_exec.compare import side_by_side
 from saga_exec.instance import Instance, load_instance
 from saga_exec.scheduling import (
     ENACT_ORDERS,
@@ -85,6 +87,7 @@ RUN_DEFAULTS = {
     "server_port": 0,           # direct: data servers' TCP port; 0 = any free port (each reports its own)
     "server_bind": {},          # direct: {machine: address} to bind to; default: the interface towards the others
     "poll": 1.0,                # seconds between status checks
+    "clock_probe": True,        # record each machine's clock / NTP state at job start and end (measurement only)
     "dry_run": False,           # print the job without submitting it
 }
 DEPRECATED = {"strict_order": "enact_order"}
@@ -290,40 +293,81 @@ def print_plan(plan: Dict[str, dict]) -> None:
                 print(f"  data: {i['producer']} -> {task} {i['bytes']} B ({where}); SAGA assumes {seconds:.2f}s")
 
 
-def summarize(run_id: str, plan: Dict[str, dict], measured: Dict[str, dict]) -> tuple:
+def slurm_observations(plan: Dict[str, dict], measured: Dict[str, dict], transfers: List[dict] | None,
+                       driver_node: str | None) -> dict:
+    """Per edge (producer, consumer): what the Slurm data path shows (actual.py's
+    edge observations). direct: a cross-machine input is pulled from the producer
+    machine's data server, which timed each request on its own (= the producer
+    machine's) clock. Either transport: the consumer can start once every producer's
+    step has exited, as noticed by the driver (driver's clock)."""
+    served = {}
+    for f in transfers or []:
+        served.setdefault((f.get("object"), f.get("src_node")), f)
+    obs = {}
+    for name, t in plan.items():
+        for i in t["inputs"]:
+            p = i["producer"]
+            o: dict = {"available": measured.get(p, {}).get("finish"), "available_clock": driver_node,
+                       "available_source": "producer step exit noticed by the driver; the consumer step can "
+                                           "be launched once all its producers have exited"}
+            f = served.get((f"{p}.{i['object']}", plan[p]["machine"]))
+            if f is not None:
+                o.update({"transfer_start": f.get("start"), "transfer_end": f.get("end"),
+                          "transfer_clock": f.get("src_node"), "transfer_within_consumer_read": True,
+                          "transfer_mechanism": "pull from the producer machine's data server; server side, "
+                                                "request routed -> last byte handed to the kernel",
+                          "extra": {"server_received_unix": f.get("received"),
+                                    "server_body_start_unix": f.get("body_start"),
+                                    "server_bytes": f.get("bytes"), "client_address": f.get("to")}})
+            obs[(p, name)] = o
+    return obs
+
+
+def summarize(run_id: str, plan: Dict[str, dict], measured: Dict[str, dict], *,
+              transfers: List[dict] | None = None, clocks: dict | None = None,
+              transport: str = "direct") -> tuple:
     """Measured times (epoch, per node clock) -> summary rows and actual.json
-    (docs/formats.md), relative to the first task's start. start/end are the
-    task's own taskStartUnix/closeUnix (as Wayline's taskStartTime/taskCloseTime);
-    delay = start - inputs_ready, where inputs_ready is when its last input became
-    available (the last producer's close, on the producer's clock): driver
-    reaction + srun step launch + interpreter start-up."""
-    starts = [m["start"] for m in measured.values() if m.get("start") is not None]
-    t0 = min(starts) if starts else None
-    rel = lambda v: v - t0 if v is not None and t0 is not None else None
-    rows = []
+    (docs/formats.md, saga_exec.actual), relative to the first task's start.
+    start/end are the task's own taskStartUnix/closeUnix (as Wayline's
+    taskStartTime/taskCloseTime); work_start/work_end are the exact boundaries
+    of the work itself (the task core's timeline); delay = start - inputs_ready,
+    where inputs_ready is when its last input became available (the last
+    producer's close, on the producer's clock): driver reaction + srun step
+    launch + interpreter start-up."""
+    driver_node = (clocks or {}).get("driver_node")
+    norm = {}
     for name, t in plan.items():
         m = measured[name]
-        ready = m.get("inputs_ready")
-        delay = m["start"] - ready if ready is not None and m.get("start") is not None else None
+        timings = m.get("timings") or {}
+        norm[name] = {
+            "machine": t["machine"], "host": m.get("node"), "core": m.get("core"), "state": m.get("state"),
+            "node": f"{m['node']} core{m['core']}" if m.get("core") is not None else m.get("node"),
+            "task_start": m.get("start"), "task_end": m.get("end"),
+            "timeline": timings.get("timeline"),
+            "legacy": {"input_read": m.get("input_read"), "compute": m.get("compute"), "handoff": m.get("handoff")},
+            "inputs_ready": m.get("inputs_ready"),
+            "launched": m.get("launch"), "finished": m.get("finish"),
+            "clocks": {"launched": driver_node, "finished": driver_node, "inputs_ready": "producer machine"},
+        }
+    edges = [(i["producer"], name, i["object"], i["bytes"]) for name, t in plan.items() for i in t["inputs"]]
+    actual = build_actual(run=run_id, backend="slurm", transport=transport, tasks=norm, edges=edges,
+                          observations=slurm_observations(plan, measured, transfers, driver_node),
+                          clocks=clocks)
+    rows = []
+    for name, t in plan.items():
+        a = actual["tasks"][name]
         rows.append({
-            "task": name, "job_id": m.get("job_id"), "state": m["state"],
-            "node": m["node"], "core": m.get("core"), "predicted_node": t["core"],
+            "task": name, "job_id": measured[name].get("job_id"), "state": a["state"],
+            "node": measured[name]["node"], "core": a["core"], "predicted_node": t["core"],
             "predicted_start": t["start"], "predicted_end": t["end"],
-            "start": rel(m.get("start")), "end": rel(m.get("end")),
-            "inputs_ready": rel(ready), "delay": delay,
-            "input_read": m.get("input_read"), "compute": m.get("compute"), "handoff": m.get("handoff"),
+            "start": a["start"], "end": a["end"],
+            "work_start": a["times"]["work_start"], "work_end": a["times"]["work_end"],
+            "work": a["durations"]["work"],
+            "inputs_ready": a["inputs_ready"], "delay": a["delay"],
+            "input_read": a["input_read"], "compute": a["compute"], "handoff": a["handoff"],
             "waits_for": t["waits_for"], "start_after": t["start_after"],
             "predicted_transfer": t["predicted_transfer"],                    # what SAGA assumed
         })
-    ends = [r["end"] for r in rows if r["end"] is not None]
-    actual = {
-        "run": run_id, "makespan": max(ends) if ends else None, "t0": t0,
-        "tasks": {r["task"]: {"node": f"{r['node']} core{r['core']}" if r["core"] is not None else r["node"],
-                              "machine": r["node"], "start": r["start"], "end": r["end"],
-                              "input_read": r["input_read"], "compute": r["compute"], "handoff": r["handoff"],
-                              "inputs_ready": r["inputs_ready"], "state": r["state"], "delay": r["delay"]}
-                  for r in rows},
-    }
     return rows, actual
 
 
@@ -343,6 +387,9 @@ def print_dry_run(plan_json: dict, script: str, run_dir: Path) -> None:
         print(f"mkdir -p {shlex.quote(driver.shared_data_dir(plan_json))} && "
               f"cp {shlex.quote(plan_json['pyz'])} {shlex.quote(driver.remote_pyz(plan_json))}")
         print(" ".join(shlex.quote(c) for c in driver.visibility_check_command(plan_json)))
+    if plan_json.get("clock_probe", True):
+        print("# clock probe (measurement only): in the background at job start, again after the last task")
+        print(" ".join(shlex.quote(c) for c in driver.clock_probe_command(plan_json)) + " &")
     tasks = {t["name"]: t for t in plan_json["tasks"]}
     for t in plan_json["tasks"]:
         env = driver.task_env(t, plan_json, tasks, servers, "<token>")
@@ -418,17 +465,19 @@ def main() -> None:
     (run_dir / "prediction.json").write_text(json.dumps(prediction, indent=2) + "\n")
     measured = run_allocation(run_id, plan, config, p.testbed)
 
-    rows, actual_record = summarize(run_id, plan, measured)
     results_path = run_dir / "results.json"
-    transfers = json.loads(results_path.read_text()).get("transfers", []) if results_path.exists() else []
+    results = json.loads(results_path.read_text()) if results_path.exists() else {}
+    transfers = results.get("transfers", [])
+    rows, actual_record = summarize(run_id, plan, measured, transfers=transfers, clocks=results.get("clocks"),
+                                    transport=config.transport)
     fmt = lambda v: f"{v:.2f}" if v is not None else "-"
 
     print()
     print(f"{'task':<10}{'node':<14}{'state':<11}{'pred start':>11}{'act start':>10}"
-          f"{'pred end':>10}{'act end':>9}{'read':>7}{'compute':>8}{'handoff':>8}{'delay':>7}")
+          f"{'pred end':>10}{'act end':>9}{'read':>7}{'work':>8}{'handoff':>8}{'delay':>7}")
     for r in rows:
         print(f"{r['task']:<10}{r['node']:<14}{r['state']:<11}{r['predicted_start']:>11.2f}{fmt(r['start']):>10}"
-              f"{r['predicted_end']:>10.2f}{fmt(r['end']):>9}{fmt(r['input_read']):>7}{fmt(r['compute']):>8}"
+              f"{r['predicted_end']:>10.2f}{fmt(r['end']):>9}{fmt(r['input_read']):>7}{fmt(r['work']):>8}"
               f"{fmt(r['handoff']):>8}{fmt(r['delay']):>7}")
     for f in transfers:
         print(f"  served {f['object']} from {f['src_node']} to {f['to']}: {f['bytes']} B in "
@@ -446,6 +495,8 @@ def main() -> None:
         print(f"Delay after inputs ready: mean {sum(delays) / len(delays):.2f}s, max {max(delays):.2f}s")
 
     (run_dir / "actual.json").write_text(json.dumps(actual_record, indent=2) + "\n")
+    side = side_by_side(prediction, actual_record)
+    (run_dir / "compare.json").write_text(json.dumps(side, indent=2) + "\n")
     out_path = run_dir / "summary.json"
     out_path.write_text(json.dumps({
         "run_id": run_id,
@@ -463,7 +514,7 @@ def main() -> None:
         "transport": config.transport,
         "transfers": transfers,              # direct: cross-machine pulls, as the data servers saw them
     }, indent=2))
-    print(f"Saved {out_path}, prediction.json and actual.json")
+    print(f"Saved {out_path}, prediction.json, actual.json and compare.json")
 
     # Gantt chart, same time axis for both. Predicted rows are SAGA's cores (cse-isha/c3);
     # actual rows are the real cores Slurm picked (cse-isha core5), so they needn't match.

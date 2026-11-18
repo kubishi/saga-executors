@@ -8,7 +8,9 @@ convert() (results/wayline/<graph>/<run name>/) and each repetition:
      so SAGA sees the bandwidths the offline prediction used) and template.yml
   2. start a run (ODAG) from it, the way `wayline run` does
   3. wait until it succeeds or fails, and until every task has its SDK times
-  4. save runs/<odag>/status.json and runs/<odag>/logs.txt
+  4. save runs/<odag>/status.json, runs/<odag>/logs.txt (incl. the task core's
+     FID_TIMELINE lines) and runs/<odag>/clock.json (this machine's NTP state
+     before and after; measurement only)
   5. delete the run and wait for its pods to go (Wayline does not clean up
      when profiling is off)
   6. analyze it: runs/<odag>/prediction.json (SAGA's, from status.scheduling),
@@ -41,6 +43,7 @@ import time
 import yaml
 
 from saga_exec.backends.wayline import analyze
+from saga_exec.clocks import local_clock
 
 # Was HERE / "out" (next to the scripts); now under the working directory.
 OUT = Path(os.environ.get("SAGA_EXEC_WAYLINE_OUT", "results/wayline")).resolve()
@@ -159,6 +162,7 @@ def run_one(template_dir: Path, rep: int, seed: int | None) -> None:
     if (template_dir / "network-profile.yml").exists():
         kubectl("apply", "-f", str(template_dir / "network-profile.yml"))
     kubectl("apply", "-f", str(template_dir / "template.yml"))
+    clock_before = local_clock()     # measurement only: this machine's NTP state (docs/formats.md, Clocks)
     name = start_run(template)
     print(f"  {name}: started (offline prediction "
           f"{'none' if predicted is None else f'{predicted:.3f} s'})")
@@ -173,9 +177,15 @@ def run_one(template_dir: Path, rep: int, seed: int | None) -> None:
     if phase not in ("Succeeded", "Failed"):
         phase = f"TimedOut ({phase})"
 
+    clock_after = local_clock()
     run_dir = template_dir / "runs" / name
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "status.json").write_text(json.dumps(status, indent=2) + "\n")
+    (run_dir / "clock.json").write_text(json.dumps({
+        "how": "run.py on the submitting machine, just before the run was created and after it ended",
+        "machines": {clock_before["host"]: {"before": clock_before, "after": clock_after}},
+        "missing": "the other machines: read `chronyc tracking` there (docs/formats.md, Clocks)",
+    }, indent=2) + "\n")
     save_logs(name, namespace, run_dir / "logs.txt")
     delete_run(name, namespace)
 

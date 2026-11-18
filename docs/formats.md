@@ -160,37 +160,160 @@ CPUs than SAGA cores (then k8s cannot run them all at once).
   (`meta.source: "wayline-status"`, plus `run`, `nodeCPUMillis`, `constraintOverrides`
   and `meta.offline`: whether it equals the offline one).
 
-`actual.json`:
+`actual.json` (format `saga-exec-actual/2`, `saga_exec.actual.build_actual`; both
+backends write it, and the v1 fields keep their meaning):
 
 ```json
 {
-  "run": "smoke-diamond-heft-order-sleep-119bea-run-hzjd6",
-  "makespan": 9.21,
-  "t0": "2026-11-05T22:58:59.819361448Z",
-  "tasks": {
-    "a": {"node": "cse-isha", "machine": "cse-isha", "start": 0.0, "end": 2.196,
-          "input_read": 0, "compute": 2.031, "handoff": 0.164}
-  }
+  "format": "saga-exec-actual/2", "run": "20261118-101500", "backend": "slurm", "transport": "direct",
+  "t0": "2026-11-18T10:15:03.120Z", "t0_unix": 1795000503.12, "t0_task": "a", "t0_clock": "cse-lambda1",
+  "t0_definition": "earliest task start (taskStartUnix) ...",
+  "makespan": 9.21, "makespan_work": 8.95, "first_work_start": 0.004,
+  "tasks": {"b": {
+    "node": "cse-isha core5", "machine": "cse-isha", "core": "5", "host": "cse-isha", "state": "COMPLETED",
+    "clock": "cse-isha",
+    "start": 2.31, "end": 6.40, "input_read": 0.41, "compute": 3.62, "handoff": 0.05,
+    "inputs_ready": 2.20, "delay": 0.11,
+    "times": {"task_start": 2.31, "inputs_read_start": 2.31, "inputs_read_end": 2.72,
+              "work_start": 2.72, "work_end": 6.32, "outputs_start": 6.32, "outputs_end": 6.39,
+              "task_end": 6.40, "launched": 2.24, "finished": 6.45},
+    "durations": {"total": 4.09, "before_work": 0.41, "start_to_first_read": 0.0, "input_read": 0.41,
+                  "work": 3.60, "generate": 0.02, "send": 0.05, "outputs": 0.07, "after_outputs": 0.01},
+    "inputs": [{"producer": "a", "object": "to-b", "peer": "a.to-b", "bytes": 10000000,
+                "source_machine": "cse-lambda1", "read_start": 2.31, "read_end": 2.72, "read": 0.41,
+                "via": "pull"}],
+    "outputs": [{"object": "to-d", "consumer": "d", "bytes": 5000000, "generate_start": 6.32,
+                 "generate_end": 6.34, "send_start": 6.34, "send_end": 6.39, "generate": 0.02, "send": 0.05}],
+    "precise": true, "other_clocks": {"launched": "cse-lambda1", "finished": "cse-lambda1"}}},
+  "edges": {"a->b": {
+    "producer": "a", "consumer": "b", "object": "to-b", "bytes": 10000000,
+    "src_machine": "cse-lambda1", "dst_machine": "cse-isha", "src_core": "3", "dst_core": "5", "kind": "inter",
+    "times": {"producer_work_end": 1.98, "producer_output_generated": 2.02, "producer_output_send_start": 2.02,
+              "producer_output_written": 2.05, "producer_task_end": 2.06, "transfer_start": 2.33,
+              "transfer_end": 2.70, "consumer_input_available": 2.20, "consumer_task_start": 2.31,
+              "consumer_read_start": 2.31, "consumer_read_end": 2.72, "consumer_work_start": 2.72},
+    "transfer": {"mechanism": "pull from the producer machine's data server ...", "clock": "cse-lambda1",
+                 "within_consumer_read": true, "server_received": 2.32, "server_body_start": 2.33},
+    "available": {"source": "producer step exit noticed by the driver ...", "clock": "cse-lambda1"},
+    "data_movement": 0.70, "work_gap": 0.74,
+    "decomposition": {"producer_write": 0.03, "wait_launch": 0.26, "network": 0.37, "consumer_read": 0.04,
+                      "network_note": "...", "wait_launch_detail": {"producer_end_to_consumer_start": 0.25, "...": 0},
+                      "clocks": {"producer_write": ["cse-lambda1"], "network": ["cse-lambda1"], "...": []},
+                      "cross_clock": true}}},
+  "clocks": {"note": "...", "driver_node": "cse-lambda1", "start": {"...": {}}, "end": {"...": {}},
+             "server_vs_driver": {"cse-isha": {"offset": 0.0004, "rtt": 0.0003}}}
 }
 ```
 
-- Times in **seconds**, relative to the first task's start. `start` / `end` are the
-  task program's own `taskStartUnix` / `closeUnix` on both backends (after
-  interpreter start-up, through close).
-- `node`: the most specific location observed (Wayline: machine; Slurm: `"cse-isha core5"`).
-- Per task, from the shared task core with the same definitions on both backends:
-  `input_read` / `compute` / `handoff` and `inputs_ready` (when its last input
-  became available: Wayline's `inputsReadyTime`; Slurm: the last producer's
-  close). What each phase *contains* depends on the data path; see
-  [data-movement.md](data-movement.md). Slurm also has `state` and `delay`
-  (`start - inputs_ready`).
-- Wayline also has `makespan_from_odag_start`; Slurm writes `summary.json` as before.
+**Time 0.** `t0_unix` is the earliest `taskStartUnix` of the run (the task program's
+own start, after interpreter start-up), on the clock of that task's machine
+(`t0_clock`). prediction.json's time 0 is the start of SAGA's first task, so both
+records count from "the first task begins". Every relative time is
+`absolute - t0_unix`. (Wayline's `status.makespan` and `actualNetworkFlows[].start`
+use the first pod's start instead; they are not used.) `makespan` = last task end;
+`makespan_work` = last work end; `first_work_start` shows how far the first task's
+work starts after t0.
+
+**Per task.** `start` / `end` (= `times.task_start` / `task_end`): the task
+program's `taskStartUnix` / `closeUnix` (Wayline: the SDK's `taskStartTime` /
+`taskCloseTime`). `times.work_start` / `work_end` are taken immediately around
+`do_work()` (pure work: no input reads, no payload generation, no sends), and
+`durations.work` is the compute to compare with SAGA's runtime. `inputs[]` /
+`outputs[]` give each read (start/end) and each output's payload generation and
+write/send, in the order the program did them; transport details are copied in
+(`via`, `source_machine`; shared_fs `attempts`, `latencyWaited`, `opened_rel`,
+`written_rel`, `renamed_rel`). `precise` is false when the task left no timeline
+(Wayline images built before it), and then only the v1 fields are set.
+`core` is the physical core on Slurm, `null` on Wayline. v1 fields are kept:
+`input_read` / `compute` / `handoff` are the SDK's phase definitions
+(fidelity_core docstring; `compute` includes generating the first output, so
+use `durations.work`), `inputs_ready` / `delay` as before.
+
+**Per edge** `u->v` (one named object per edge): the instants along the data path
+(`times`), the observed `kind` (`inter`, `same-core`, `intra`, or `same-machine`
+when cores are unknown, as on Wayline), and a decomposition of
+`data_movement` = consumer read end − producer send start:
+
+| part | meaning |
+|---|---|
+| `producer_write` | the producer's write/send of this object (Wayline: sha256 + local install + push request; Slurm: file write + rename) |
+| `network` | the observed transfer interval: Wayline push (sender's agent), Slurm direct pull (data server on the producer machine). `0.0` for a same-machine edge on Wayline / direct (local file). `"unobservable"` on shared_fs (the network is inside the write and/or the read) or when no record exists |
+| `consumer_read` | the consumer's read of this input, minus `network` when the transfer happens inside the read (direct pull) |
+| `wait_launch` | the rest: `data_movement - producer_write - network - consumer_read` (producer close, driver/controller reaction, step/pod launch, interpreter start, earlier inputs, push queue). `wait_launch_detail` splits it where both ends are known |
+
+`work_gap` = consumer work start − producer work end: the interval SAGA's comm time
+has to fit into. `decomposition.clocks` names the machine clock(s) each part
+uses; `cross_clock: true` means `data_movement` and `wait_launch` mix two clocks
+(see Clocks). Nothing is estimated: a quantity that is not observed is `null`
+or `"unobservable"`.
+
+What each backend / transport observes per edge:
+
+| | Wayline | Slurm `direct` | Slurm `shared_fs` |
+|---|---|---|---|
+| producer work end, output generated, written | task timeline (pod log `FID_TIMELINE`) | task timeline (`FID_RESULT`) | task timeline |
+| transfer start / end | cross-node: push wire start/end, sender's agent (`actualNetworkFlows`; absolute `startUnix` needs the saga-executor controller, otherwise reconstructed from the whole-second pod origin and flagged) + `push_request`, `push_hashed`, receiver's `receive_start`; same node: none (local file) | cross-machine: server-side pull (`received`, `start`, `body_start`, `end`, bytes), producer machine's clock; same machine: none | **unobservable** (NFS); write side `written`/`renamed`, read side `opened`, `attempts`, `latencyWaited` |
+| consumer input available | install record on the consumer's node, per object (`status.tasks[].inputs`, saga-executor controller); else `inputsReadyTime` for single-input tasks | producer step exit noticed by the driver (driver's clock) | same as direct |
+| consumer read start / end | task timeline | task timeline (includes the pull) | task timeline (includes NFS read and latency wait) |
+
+compare.json (`saga_exec.compare.side_by_side`, written next to actual.json by
+both backends): per task SAGA's machine/core/start/end/duration next to the actual
+task start/end, work start/end and work duration, with `actual_minus_saga` for
+both pairs; per edge SAGA's link kind and speed, comm time (bytes / link speed, as
+the bridge builds the link from the request) and predicted gap, next to the
+actual `data_movement`, `work_gap` and decomposition; the makespans; the
+per-machine order (SAGA, actual by work start, actual by task start). It states
+differences, not verdicts.
+
+**Clocks.** Every absolute time is the clock of the machine that took it, so a
+cross-machine interval contains the offset between the two clocks. Nothing is
+corrected; `clocks` records what is known, best-effort:
+- Slurm: `driver.py` runs a one-line probe step on every machine
+  (`chronyc -c tracking`, else `timedatectl timesync-status`, plus `date`) at job
+  start, in the background and never waited for, and again after the last task
+  (`clock-start.log`, `clock-end.log`; run file `"clock_probe": false` turns it
+  off). With `direct`, the status call to each data server at the end is timed:
+  `server_vs_driver.<m>.offset` = server time − midpoint, ± `rtt` / 2.
+- Wayline: `run.py` records `chronyc -c tracking` (or timedatectl) on the machine
+  it runs on (cse-lambda1) before and after each run (`runs/<odag>/clock.json`).
+  The other machine is not read from there (no ssh from run.py); to capture it,
+  run `chronyc -c tracking` on cse-isha before and after a batch (e.g.
+  `ssh cse-isha chronyc -c tracking >> isha-clock.csv`) and keep it with the
+  results. Within one Wayline edge the push times are on the sender's clock and
+  `available` / `receive_start` on the receiver's.
+
+**Measurement only, and its limits.** The instrumentation adds timestamps and
+records around code that already runs; it does not reorder, wait, or change
+what the drivers launch or how data moves (`tests/test_timeline.py` checks that
+the task program's operations and their order are identical to before). The
+two things that run in addition are the Slurm clock probe step at job start (in
+the background, through slurmctld like any step; `"clock_probe": false` removes
+it) and one local `chronyc` call in Wayline's `run.py` before a run is created.
+Not measured, because it would need a change to execution:
+- the network part of a shared_fs edge (NFS client write-back / read; it would
+  need a separate sync or per-file NFS statistics);
+- client-side first byte of a direct pull (the server's `body_start` is the
+  proxy; timing inside `request()` would add work to the read);
+- the moment a Wayline consumer *could* have been created vs when the controller
+  noticed (its 500 ms poll / events are inside `wait_launch`), and per-core
+  placement on Wayline (no pinning);
+- on Slurm, when a producer's exit became visible to the driver is observed
+  (`available`, 5 ms poll), not when its `srun` step was torn down;
+- clock offsets are snapshots at start/end, not corrections; cross-clock
+  intervals are reported as they are.
+
 - Per-run folder: Wayline `results/wayline/<instance>/<config name>/` with `template.yml`,
   `network-profile.yml`, `request.json`, `prediction.json`, `instance.json`, `config.json`,
-  `runs/<odag>/{status.json,logs.txt,prediction.json,actual.json,gantt.png}`;
-  Slurm `~/slurm-logs/saga/<run_id>/` with `prediction.json`, `actual.json`,
+  `runs/<odag>/{status.json,logs.txt,clock.json,prediction.json,actual.json,compare.json,gantt.png}`;
+  Slurm `~/slurm-logs/saga/<run_id>/` with `prediction.json`, `actual.json`, `compare.json`,
   `summary.json` (incl. `transport`, `transfers`), `plan.json`, `job.sbatch`, `task.pyz`,
-  `results.json`, `driver.log`, `server-<machine>.log` (direct), `<task>.out`, `gantt.png`.
+  `results.json` (incl. `clocks`), `driver.log`, `server-<machine>.log` (direct),
+  `clock-start.log`, `clock-end.log`, `<task>.out`, `gantt.png`.
+- The Wayline per-edge fields need the task image rebuilt from `task/` (for the
+  `FID_TIMELINE` line) and, for per-object availability and absolute push times,
+  the controller, data agent and CRD (`api/v1/odag-crd.yml`, so the API server keeps
+  the new status fields) from Wayline's `saga-executor` branch. Older runs still
+  analyze; the missing fields are `null`.
 
 ## 4. Enactment: `enact_order` (both backends)
 
@@ -264,11 +387,11 @@ machines.yaml + override), 15 (order: `enact_order`), 26 (reproducibility:
 | 13 | What a task does | SETTLED: the same task program (`task/`, `sleep` or `cpu`) on both; container (python:3.11) vs. `srun` step (uv Python 3.12) | |
 | 14 | Data transfers | SETTLED (no simulation): real bytes on both, each backend's own data path (4b); the transport is an experimental variable | |
 | 16 | Placement mechanism | the controller binds pods to SAGA's node | `srun --nodelist=machine` (+ `--exact`, `--cpu-bind=none`) |
-| 17 | Measured start / end | SETTLED: the task core's `taskStartUnix` / `closeUnix` on both (end includes output handoff) | |
-| 18 | Clocks | per-node clocks in SDK timestamps | per-node clocks (`inputs_ready` is the producer's clock) |
+| 17 | Measured start / end | SETTLED: the task core's `taskStartUnix` / `closeUnix` on both (end includes output handoff); exact work start / end from the task timeline (section 3) | |
+| 18 | Clocks | per-node clocks in SDK timestamps; recorded, not corrected: run.py records lambda1's NTP state, isha by hand (section 3, Clocks) | per-node clocks (`inputs_ready` is the producer's clock); probe step per machine at job start / end + server offsets (section 3, Clocks) |
 | 19 | Measured makespan | last close − first start (also `makespan_from_odag_start`) | max end − min start |
 | 20 | Actual `node` | machine only | host + physical core |
-| 21 | Phase breakdown | SETTLED: `input_read`, `compute`, `handoff`, `inputs_ready` on both (Slurm also `delay`) | |
+| 21 | Phase breakdown | SETTLED: `input_read`, `compute`, `handoff`, `inputs_ready` on both (Slurm also `delay`); actual.json v2 adds the exact timeline per task and per edge (section 3) | |
 | 23 | Output location | `results/wayline/` in the repo | `~/slurm-logs/saga/<run_id>/` on lambda |
 | 24 | Run identity | config hash in name + ODAG name | timestamp `run_id` |
 | 25 | Repetitions | `run.py --reps N --shuffle SEED`, `run-log.csv` | one run per invocation |

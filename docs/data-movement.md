@@ -41,7 +41,7 @@ runs one data agent (DaemonSet, Go, hostPort 8082) that stores data in
 
 | Cost | Wayline phase |
 |---|---|
-| sha256 + local install (+ generating outputs after the first) | producer `handoff` |
+| sha256 + local install (+ generating outputs after the first) | producer `handoff` (exact per output: `outputs[].send`, `generate`) |
 | cross-node network transfer | **none**: between producer `end` and consumer `inputs_ready` |
 | controller reaction + pod start | `delay` (`inputs_ready` → consumer `start`) |
 | local file read | consumer `input_read` |
@@ -101,6 +101,18 @@ So on `shared_fs` a "same-machine" transfer on isha can cross the network
 twice, while lambda→isha crosses it once. SAGA's link model (self / intra /
 inter speeds per machine) cannot express this asymmetry. This is an open
 question (docs/formats.md).
+
+### Exact per-edge times (actual.json v2)
+
+Besides the phase fields above, every task records an exact timeline (each read,
+the work itself, each output's generation and write/send) and each edge gets the
+instants along its data path and a decomposition into producer write, wait /
+launch, network and consumer read, with "unobservable" where the data path
+hides a part (shared_fs network). What is observable on which backend and
+transport, and which clock each part uses: [formats.md](formats.md), section 3.
+Server-side pull times (direct) and push times (Wayline: sender's agent, plus
+the install time on the consumer's node) are recorded by the data path's own
+components, which already handle every transfer.
 
 ### Practical notes
 

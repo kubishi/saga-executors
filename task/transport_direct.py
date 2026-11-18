@@ -21,7 +21,8 @@ Data server: one per machine, its own Slurm step for the whole job:
 interface that reaches the other machines (or --bind) on a free port, prints one
 JSON line {"fid_server": M, "host", "port", ...}, serves GET /obj/<run>/<key>
 (sendfile, many requests at once, X-Fid-Token required) and GET /status/<run>
-(the transfers it has served), and on POST /shutdown/<run> or SIGTERM deletes
+(the transfers it has served: object, bytes, client address and, on this
+machine's clock, received / start / body_start / end), and on POST /shutdown/<run> or SIGTERM deletes
 <scratch>/<run> (and --cleanup files) and exits.
 
 Env (task side, besides the core's FID_*): FID_TRANSPORT=direct, FID_RUN, FID_TASK,
@@ -107,10 +108,12 @@ class DirectTransport:
         self.servers = parse_servers(env.get("FID_SERVERS", ""))
         self.input_nodes = parse_map(env.get("FID_INPUT_NODES", ""), "=")
         self.pulled = 0
+        self.last_recv_info: dict = {}       # measurement only, read by the core's timeline
 
     def recv(self, peer: str) -> bytes:
         self.clock.recv_begin()
         src = self.input_nodes.get(peer, self.node)
+        self.last_recv_info = {"sourceNode": src, "via": "local" if src == self.node else "pull"}
         if src == self.node:
             with open(self.dir / peer, "rb") as f:
                 data = f.read()
@@ -208,6 +211,7 @@ class _Handler(BaseHTTPRequestHandler):
         return key
 
     def do_GET(self):
+        received = time.time()                       # measurement only (served[].received)
         if self.path == "/healthz":
             return self._reply(200, "ok")
         if self.path.startswith("/status/"):
@@ -230,10 +234,12 @@ class _Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(size))
             self.end_headers()
             self.wfile.flush()
+            body_start = time.time()                 # measurement only: headers sent, body begins
             self.connection.sendfile(f)
         with self.server.lock:
             self.server.served.append({"object": key, "bytes": size, "to": self.client_address[0],
-                                       "start": start, "end": time.time()})
+                                       "start": start, "end": time.time(), "received": received,
+                                       "body_start": body_start, "server_node": self.server.node})
 
     def do_POST(self):
         if self._route("shutdown") is not None:

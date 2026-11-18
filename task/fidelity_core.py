@@ -34,10 +34,30 @@ the transport (docs/data-movement.md):
 Because outputs are generated just before each send (as in the original task.py),
 generating the FIRST output's random bytes falls in compute and generating later
 ones in handoff. Kept as is so Wayline results stay comparable with earlier runs.
+
+Exact timeline (measurement only; docs/formats.md "actual.json"). run() also takes
+timestamps (time.time(), this machine's clock) immediately around each step it
+already performs, without changing what it does or in which order:
+
+  runStartUnix                  run() entered
+  inputs[]                      per input, in read order: peer, producer, object, bytes,
+                                readStartUnix / readEndUnix around transport.recv,
+                                and what the transport knows (source machine, waits)
+  workStartUnix / workEndUnix   immediately around do_work(): the pure work
+  outputs[]                     per output, in send order: object, bytes,
+                                generateStartUnix / generateEndUnix around payload(),
+                                sendStartUnix / sendEndUnix around transport.send
+  closeStartUnix / closeEndUnix around transport.close()
+
+It is returned as record["timeline"] (Slurm: in the FID_RESULT line), or, when
+the transport reports its timings elsewhere (Wayline), printed after close() as
+one "FID_TIMELINE {json}" line on stdout (the pod log). Analysis uses
+workStartUnix / workEndUnix for compute; computeSeconds above stays as it was.
 """
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import random
 import socket
@@ -168,6 +188,40 @@ class PhaseClock:
         }
 
 
+class Timeline:
+    """Timestamps taken around the steps run() already performs (see the module
+    docstring). Measurement only: it never calls the transport or changes data."""
+
+    def __init__(self) -> None:
+        self.run_start = time.time()
+        self.inputs: list[dict] = []
+        self.outputs: list[dict] = []
+        self.work_start: float | None = None
+        self.work_end: float | None = None
+        self.close_start: float | None = None
+        self.close_end: float | None = None
+
+    def to_dict(self) -> dict:
+        return {
+            "runStartUnix": self.run_start,
+            "inputs": self.inputs,
+            "workStartUnix": self.work_start,
+            "workEndUnix": self.work_end,
+            "workSeconds": (self.work_end - self.work_start
+                            if self.work_start is not None and self.work_end is not None else None),
+            "outputs": self.outputs,
+            "closeStartUnix": self.close_start,
+            "closeEndUnix": self.close_end,
+        }
+
+
+def _transport_detail(transport, attr: str) -> dict:
+    """What a transport recorded about its last recv/send (e.g. the source machine,
+    latency waits); {} if it records nothing. Read only."""
+    info = getattr(transport, attr, None)
+    return dict(info) if isinstance(info, dict) else {}
+
+
 class Transport:
     """What the core needs from a backend. `name` and `node` identify the task
     and the machine it runs on; recv/send are timed by the transport itself
@@ -185,45 +239,81 @@ class Transport:
         raise NotImplementedError
 
 
-def read_inputs(transport: Transport, env) -> int:
+def read_inputs(transport: Transport, env, timeline: Timeline | None = None) -> int:
     """Read every input in FID_INPUTS; return total bytes. Reading is part of the
     measured cost, so inputs are read even though they are not used."""
     total = 0
     for peer in parse_list(env.get("FID_INPUTS", "")):
+        start = time.time()
         data = transport.recv(peer)
+        end = time.time()
         total += len(data)
+        if timeline is not None:
+            producer, _, obj = peer.partition(".")
+            timeline.inputs.append({"peer": peer, "producer": producer, "object": obj, "bytes": len(data),
+                                    "readStartUnix": start, "readEndUnix": end,
+                                    **_transport_detail(transport, "last_recv_info")})
         del data
     return total
 
 
-def send_outputs(transport: Transport, env) -> None:
+def send_outputs(transport: Transport, env, timeline: Timeline | None = None) -> None:
     """Send each output in FID_OUTPUTS. A leaf (no outputs) sends b"done" to its
     default output, as E11 and the original task.py did."""
     outputs = parse_outputs(env.get("FID_OUTPUTS", ""))
     if not outputs:
+        start = time.time()
         transport.send(None, b"done")
+        end = time.time()
+        if timeline is not None:
+            timeline.outputs.append({"object": None, "bytes": 4, "generateStartUnix": None,
+                                     "generateEndUnix": None, "sendStartUnix": start, "sendEndUnix": end,
+                                     **_transport_detail(transport, "last_send_info")})
         return
     for name, size in outputs:
+        gen_start = time.time()
         data = payload(size)
+        gen_end = time.time()
         transport.send(name, data)
+        send_end = time.time()
+        if timeline is not None:
+            timeline.outputs.append({"object": name, "bytes": size, "generateStartUnix": gen_start,
+                                     "generateEndUnix": gen_end, "sendStartUnix": gen_end,
+                                     "sendEndUnix": send_end, **_transport_detail(transport, "last_send_info")})
         del data
 
 
 def run(transport: Transport, env=None) -> dict | None:
-    """One task: inputs -> work -> outputs -> close. Returns the transport's timing record."""
+    """One task: inputs -> work -> outputs -> close. Returns the transport's timing
+    record with the exact timeline added (record["timeline"]); a transport that
+    reports elsewhere (Wayline, close() -> None) returns None, and the timeline
+    is printed as a "FID_TIMELINE {json}" line after close()."""
     env = os.environ if env is None else env
+    timeline = Timeline()
     mode = env.get("FID_MODE", "sleep")
     base = float(env["FID_SECONDS"])
     hash_rate = float(env.get("FID_HASH_RATE") or 0) or None
 
-    in_bytes = read_inputs(transport, env)
+    in_bytes = read_inputs(transport, env, timeline)
     speed = node_speed(env, transport.node)
 
     t = time.perf_counter()
+    timeline.work_start = time.time()
     do_work(mode, base, speed, hash_rate)
+    timeline.work_end = time.time()
     elapsed = time.perf_counter() - t
 
-    send_outputs(transport, env)
+    send_outputs(transport, env, timeline)
     print(f"[fidelity] task={transport.name} node={transport.node} mode={mode} "
           f"planned={base / speed:.3f} measured={elapsed:.3f} in_bytes={in_bytes}", flush=True)
-    return transport.close()
+    timeline.close_start = time.time()
+    record = transport.close()
+    timeline.close_end = time.time()
+    tl = timeline.to_dict()
+    if record is None:
+        # Reported after close(), so printing cannot shift any measured instant.
+        print("FID_TIMELINE " + json.dumps({"task": transport.name, "node": transport.node, **where(),
+                                            "timeline": tl}), flush=True)
+        return None
+    record["timeline"] = tl
+    return record

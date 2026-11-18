@@ -24,6 +24,14 @@ shared_fs (needs a shared work dir, e.g. NFS: testbed/slurm/nfs.md)
   tasks  write outputs to data/ and read inputs from there;
   end    delete the run's folder in the work dir (unless keep_data).
 
+Clocks (measurement only, best-effort; docs/formats.md): unless the plan says
+"clock_probe": false, one tiny step per machine records the time and
+`chronyc -c tracking` (or timedatectl) at job start, launched in the background
+and never waited for, and again after the last task has finished
+(clock-start.log, clock-end.log). With direct, the existing status call to each
+data server at the end is timed, giving that machine's offset from the driver's
+clock (NTP-style midpoint, +- rtt/2). All of it goes to results.json "clocks".
+
 Either way the loop is the same, as a workflow system on Slurm would do it:
     start every task whose producers' steps have all COMPLETED and whose
     start_after tasks (machine predecessor in SAGA's order, with enact_order
@@ -53,6 +61,7 @@ from typing import Dict, List, Optional
 POLL = 0.005                # seconds between checks for finished steps
 SERVER_START_TIMEOUT = 120  # seconds for every data server to report its address
 SERVER_STOP_TIMEOUT = 30
+CLOCK_PROBE_TIMEOUT = 30    # seconds for the end-of-job clock probe (after every task has finished)
 TOKEN_HEADER = "X-Fid-Token"
 TRANSPORTS = ("direct", "shared_fs")
 
@@ -99,6 +108,74 @@ def visibility_check_command(plan: dict) -> List[str]:
     return ["srun", "--overlap", f"--nodes={n}", f"--ntasks={n}", "--ntasks-per-node=1",
             f"--nodelist={','.join(plan['machines'])}", "--mem=64M", "--job-name=check-workdir", "bash", "-c",
             f'test -r {pyz} && test -w {data} || {{ echo "$(hostname): {data} not shared here"; exit 1; }}']
+
+
+# One line per fact, "FIDCLK <host> <kind> <value>", so multi-node output can interleave.
+CLOCK_PROBE_SCRIPT = (
+    'h=$(hostname); echo "FIDCLK $h unix $(date +%s.%N)"; '
+    'if command -v chronyc >/dev/null 2>&1; then chronyc -c tracking 2>&1 | sed "s/^/FIDCLK $h chrony /"; '
+    'elif command -v timedatectl >/dev/null 2>&1; then '
+    'timedatectl timesync-status 2>&1 | sed "s/^/FIDCLK $h timesync /"; '
+    'else echo "FIDCLK $h none no chronyc or timedatectl"; fi; '
+    'echo "FIDCLK $h unix $(date +%s.%N)"'
+)
+CHRONY_FIELDS = ("reference_id", "reference_name", "stratum", "reference_time", "system_time_offset",
+                 "last_offset", "rms_offset", "frequency_ppm", "residual_frequency_ppm", "skew_ppm",
+                 "root_delay", "root_dispersion", "update_interval", "leap_status")
+
+
+def clock_probe_command(plan: dict) -> List[str]:
+    """One tiny step per machine: its clock and NTP state (measurement only)."""
+    n = len(plan["machines"])
+    return ["srun", "--overlap", f"--nodes={n}", f"--ntasks={n}", "--ntasks-per-node=1",
+            f"--nodelist={','.join(plan['machines'])}", "--mem=16M", "--job-name=clock-probe",
+            "bash", "-c", CLOCK_PROBE_SCRIPT]
+
+
+def parse_clock_probe(text: str) -> Dict[str, dict]:
+    """clock-*.log -> {host: {"unix": [first, last], "chrony": {...}, "raw": [...]}}.
+    chrony fields as `chronyc -c tracking` prints them (seconds / ppm); see
+    chronyc(1) for the sign of system_time_offset."""
+    out: Dict[str, dict] = {}
+    for line in text.splitlines():
+        parts = line.split(" ", 3)
+        if len(parts) < 4 or parts[0] != "FIDCLK":
+            continue
+        _, host, kind, value = parts
+        h = out.setdefault(host, {"unix": [], "raw": []})
+        if kind == "unix":
+            try:
+                h["unix"].append(float(value))
+            except ValueError:
+                h["raw"].append(line)
+        elif kind == "chrony" and value.count(",") >= len(CHRONY_FIELDS) - 1:
+            fields = dict(zip(CHRONY_FIELDS, value.split(",")))
+            for k, v in fields.items():
+                try:
+                    fields[k] = float(v) if k not in ("reference_id", "reference_name", "leap_status") else v
+                except ValueError:
+                    pass
+            h["chrony"] = fields
+            h["source"] = "chronyc"
+        else:
+            h["raw"].append(f"{kind} {value}")
+            h.setdefault("source", "timedatectl" if kind == "timesync" else kind)
+            key, _, v = value.strip().partition(":")
+            if kind == "timesync" and key == "Offset":       # e.g. "+3.177ms" (systemd-timesyncd)
+                v = v.strip()
+                for unit, scale in (("us", 1e-6), ("ms", 1e-3), ("s", 1.0)):
+                    if v.endswith(unit):
+                        try:
+                            h["timesync_offset"] = float(v[:-len(unit)]) * scale
+                        except ValueError:
+                            pass
+                        break
+    return out
+
+
+def read_clock_probe(path: Path, launched: float, finished: Optional[float]) -> dict:
+    text = path.read_text(errors="replace") if path.exists() else ""
+    return {"driver_launch": launched, "driver_done": finished, "hosts": parse_clock_probe(text)}
 
 
 def server_command(plan: dict, machine: str) -> List[str]:
@@ -242,11 +319,20 @@ def start_servers(plan: dict, run_dir: Path, env: dict, t0: float) -> tuple:
 
 
 def stop_servers(procs: dict, servers: dict, token: str, run_id: str) -> Dict[str, dict]:
-    """Collect what each server served, then shut it down (it cleans its scratch)."""
+    """Collect what each server served, then shut it down (it cleans its scratch).
+    The status call is timed on the driver's clock (status[m]["clock_vs_driver"]):
+    the server's "unix" against the call's midpoint estimates that machine's clock
+    offset from the driver's, within +- rtt / 2."""
     status = {}
     for m, s in servers.items():
         try:
+            sent = time.time()
             status[m] = server_call(s, "GET", f"/status/{run_id}", token)
+            got = time.time()
+            if isinstance(status[m].get("unix"), (int, float)):
+                status[m]["clock_vs_driver"] = {
+                    "server_unix": status[m]["unix"], "driver_send": sent, "driver_recv": got,
+                    "offset": status[m]["unix"] - (sent + got) / 2, "rtt": got - sent}
             server_call(s, "POST", f"/shutdown/{run_id}", token)
         except Exception as e:
             print(f"could not stop data server on {m}: {e}", flush=True)
@@ -281,6 +367,30 @@ def setup(plan: dict, run_dir: Path, env: dict, t0: float) -> tuple:
     return {}, {}
 
 
+def collect_clocks(plan: dict, run_dir: Path, env: dict, clock_start: Optional[tuple], host: str) -> dict:
+    """Best-effort clock records (never raises): the job-start probe launched in the
+    background, and an end probe run now, after every task has finished."""
+    clocks: dict = {"driver_node": host, "note": "best-effort; timestamps are not corrected with these"}
+    if not plan.get("clock_probe", True):
+        return clocks
+    try:
+        if clock_start is not None:
+            launched, proc = clock_start
+            try:
+                proc.wait(timeout=CLOCK_PROBE_TIMEOUT)
+            except subprocess.TimeoutExpired:
+                proc.terminate()
+            clocks["start"] = read_clock_probe(run_dir / "clock-start.log", launched, None)
+        launched = time.time()
+        with (run_dir / "clock-end.log").open("w") as out:
+            subprocess.run(clock_probe_command(plan), stdout=out, stderr=subprocess.STDOUT, env=env,
+                           timeout=CLOCK_PROBE_TIMEOUT)
+        clocks["end"] = read_clock_probe(run_dir / "clock-end.log", launched, time.time())
+    except Exception as e:                      # measurement must never lose a run
+        clocks["error"] = str(e)
+    return clocks
+
+
 def main() -> None:
     plan_path = Path(sys.argv[1])
     plan = json.loads(plan_path.read_text())
@@ -300,10 +410,20 @@ def main() -> None:
     env = {**os.environ, "FID_TOKEN": token}
     server_procs: dict = {}
     servers: dict = {}
+    clock_start: Optional[tuple] = None
     log(t0, f"driver on {host}: {len(tasks)} tasks, mode {plan['mode']}, transport {plan['transport']}, "
             f"Slurm job {os.environ.get('SLURM_JOB_ID', '?')}")
 
     try:
+        if plan.get("clock_probe", True):
+            # Measurement only: launched in the background and never waited for here;
+            # a failure to launch it is recorded, never fatal.
+            try:
+                clock_start = (time.time(), subprocess.Popen(
+                    clock_probe_command(plan), stdout=(run_dir / "clock-start.log").open("w"),
+                    stderr=subprocess.STDOUT, env=env))
+            except OSError as e:
+                log(t0, f"clock probe not started: {e}")
         server_procs, servers = setup(plan, run_dir, env, t0)
         while pending or running:
             # 1. Collect steps that have exited.
@@ -363,13 +483,17 @@ def main() -> None:
             proc.terminate()
         for name, r in results.items():
             r["inputs_ready"] = parents_end(tasks[name], results)
+        clocks = collect_clocks(plan, run_dir, env, clock_start, host)
         served = stop_servers(server_procs, servers, token, run_id)
+        clocks["server_vs_driver"] = {m: st["clock_vs_driver"] for m, st in served.items()
+                                      if "clock_vs_driver" in st}
         if not is_direct(plan) and not plan.get("keep_data") and plan.get("shared_dir"):
             shutil.rmtree(plan["shared_dir"], ignore_errors=True)
         (run_dir / "results.json").write_text(json.dumps({
             "driver_node": host, "driver_start": t0, "transport": plan["transport"], "tasks": results,
             "servers": servers,
             "transfers": [dict(t, src_node=m) for m, st in served.items() for t in st.get("served", [])],
+            "clocks": clocks,
         }, indent=2))
 
     failed = [n for n, r in results.items() if r["state"] != "COMPLETED"]
