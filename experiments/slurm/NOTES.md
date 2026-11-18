@@ -65,5 +65,9 @@ e +serial I/O); SAGA always under-predicts:
   concurrent pulls over the single lambda1-isha link at ~98 MB/s aggregate
   (8-124 MB/s each), where SAGA gives each transfer the full link. Worst for
   wide fan-in/fan-out workflows (genome, montage-l).
-- HEFT vs CPOP ranking agrees with measurements in only ~11-14 of 24 cells for
-  every variant (ties within 1%).
+- Relative order of the HEFT and CPOP schedules (predicted vs measured makespan,
+  ties within 1%), base model, 24 cells: 14 agree; 8 are predicted ties whose
+  measured makespans differ (some by noise-level amounts with 3 reps); 2 are
+  reversals: epigenomics-l 2 s lo (predicted HEFT 3% faster, measured 3% slower)
+  and genome-l 0.5 s hi (predicted HEFT 8% faster, measured CPOP 28% faster,
+  a contention case). Other variants are similar (11-14 of 24 agree).
