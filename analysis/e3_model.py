@@ -69,8 +69,11 @@ MEASURED_LINKS = {
 LAUNCH = {"cse-lambda1": 0.108, "cse-isha": 0.126}
 # E1 (14 and 28 simultaneous independent tasks, n=6): (last - first task start) / (n - 1).
 STAGGER = 0.0077
-# E2 producers (10-500 MB outputs): random.randbytes generation rate, median.
-GEN_RATE = {"cse-lambda1": 354e6, "cse-isha": 323e6}
+# Payload generation (repeated 1 MiB random block, lazy; task/fidelity_core.py),
+# measured over E3 round 2 (2026-11-18): bytes / generate time per machine.
+# Effectively negligible (first block ~3 ms per task). Before the payload fix it
+# was random.randbytes at ~354 / 323 MB/s (E2).
+GEN_RATE = {"cse-lambda1": 35.0e9, "cse-isha": 25.8e9}
 
 
 @dataclass(frozen=True)
