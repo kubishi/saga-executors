@@ -28,7 +28,7 @@ import secrets
 import time
 from pathlib import Path
 
-from fidelity_core import PhaseClock, where
+from fidelity_core import PhaseClock, where, write_payload
 
 
 class SharedFsTransport:
@@ -74,7 +74,7 @@ class SharedFsTransport:
         tmp = self.dir / f".{dest.name}.tmp.{secrets.token_hex(6)}"
         try:
             with open(tmp, "wb") as f:
-                f.write(data)
+                write_payload(f, data)
             written = time.time()                    # measurement only: written and closed (NFS: flushed)
             os.replace(tmp, dest)
         except BaseException:

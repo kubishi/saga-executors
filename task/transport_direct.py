@@ -47,7 +47,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from fidelity_core import PhaseClock, parse_map, where
+from fidelity_core import PhaseClock, parse_map, where, write_payload
 
 TOKEN_HEADER = "X-Fid-Token"
 CHUNK = 1 << 20
@@ -84,7 +84,7 @@ def write_atomic(path: Path, data: bytes) -> None:
     tmp = path.with_name(f".{path.name}.tmp.{secrets.token_hex(6)}")
     try:
         with open(tmp, "wb") as f:
-            f.write(data)
+            write_payload(f, data)
         os.replace(tmp, path)
     except BaseException:
         tmp.unlink(missing_ok=True)

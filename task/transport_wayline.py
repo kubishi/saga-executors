@@ -16,6 +16,8 @@ class WaylineTransport:
         self.name = self._task.name
         self.node = self._task.node           # NODE_NAME (downward API)
 
+    needs_bytes = True                      # WlTask.send_raw takes bytes
+
     def recv(self, peer: str) -> bytes:
         return self._task.recv_raw(peer=peer)
 

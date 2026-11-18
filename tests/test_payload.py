@@ -14,7 +14,7 @@ def test_small_payload_size():
 def test_chunked_payload_size(monkeypatch):
     monkeypatch.setattr(fidelity_core, "PAYLOAD_CHUNK", 1000)
     data = fidelity_core.payload(2500)
-    assert len(data) == 2500 and isinstance(data, bytes)
+    assert len(data) == 2500 and len(bytes(data)) == 2500
 
 
 def test_payload_over_c_int_bits():
@@ -38,10 +38,21 @@ def test_link_transfer_seconds_uses_timeline_and_skips_failures():
 def test_payload_is_incompressible_and_fast():
     import time
     import zlib
-    data = fidelity_core.payload(8_000_000)
+    data = bytes(fidelity_core.payload(8_000_000))
     assert len(zlib.compress(data, 6)) > 0.99 * len(data)
     fidelity_core.payload(1)                       # block generated once per process
     t = time.perf_counter()
-    big = fidelity_core.payload(500_000_000)
+    big = bytes(fidelity_core.payload(500_000_000))
     assert len(big) == 500_000_000
     assert time.perf_counter() - t < 1.0           # memory speed, not ~350 MB/s generation
+
+
+def test_payload_object_writes_without_materializing(tmp_path, monkeypatch):
+    monkeypatch.setattr(fidelity_core, "PAYLOAD_CHUNK", 1000)
+    monkeypatch.setattr(fidelity_core, "_BLOCK", None)
+    p = fidelity_core.Payload(2500)
+    assert len(p) == 2500 and [len(c) for c in p.chunks()] == [1000, 1000, 500]
+    f = tmp_path / "out"
+    with open(f, "wb") as fh:
+        fidelity_core.write_payload(fh, p)
+    assert f.read_bytes() == bytes(p)

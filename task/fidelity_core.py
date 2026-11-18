@@ -122,7 +122,7 @@ def do_work(mode: str, seconds: float, speed: float, hash_rate: float | None) ->
         raise ValueError(f"Unknown FID_MODE {mode!r}: use sleep or cpu")
 
 
-def payload(nbytes: int) -> bytes:
+def payload(nbytes: int) -> "Payload":
     """Incompressible bytes, produced at memory speed.
 
     Real tasks produce outputs as part of their compute; generating fresh random
@@ -132,11 +132,42 @@ def payload(nbytes: int) -> bytes:
     what Wayline's agent can use for pushes (--push-compress, off by default);
     zeros would be ~free there. Generation stays timed separately in the task's
     timeline."""
-    block = _random_block()
-    if nbytes <= len(block):
-        return block[:nbytes]
-    reps, rest = divmod(nbytes, len(block))
-    return block * reps + block[:rest]
+    return Payload(nbytes)
+
+
+class Payload:
+    """nbytes of the per-process random block, repeated, without materializing it.
+
+    File-based transports write it chunk by chunk (write_payload), so producing a
+    large output costs nothing beyond the write itself. Transports that need real
+    bytes (Wayline's SDK) set needs_bytes and the core materializes it in the
+    timed generate phase."""
+
+    def __init__(self, nbytes: int) -> None:
+        self.nbytes = int(nbytes)
+        self.block = _random_block()
+
+    def __len__(self) -> int:
+        return self.nbytes
+
+    def chunks(self):
+        view, left = memoryview(self.block), self.nbytes
+        while left > 0:
+            n = min(left, len(view))
+            yield view[:n]
+            left -= n
+
+    def __bytes__(self) -> bytes:
+        return b"".join(self.chunks())
+
+
+def write_payload(f, data) -> None:
+    """Write bytes or a Payload to an open binary file."""
+    if isinstance(data, Payload):
+        for chunk in data.chunks():
+            f.write(chunk)
+    else:
+        f.write(data)
 
 
 PAYLOAD_CHUNK = 64 * 1024 * 1024
@@ -296,6 +327,8 @@ def send_outputs(transport: Transport, env, timeline: Timeline | None = None) ->
     for name, size in outputs:
         gen_start = time.time()
         data = payload(size)
+        if getattr(transport, "needs_bytes", False) and not isinstance(data, bytes):
+            data = bytes(data)                       # e.g. Wayline's SDK: materialize, timed as generate
         gen_end = time.time()
         transport.send(name, data)
         send_end = time.time()

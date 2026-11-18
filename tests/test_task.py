@@ -59,7 +59,7 @@ def test_core_reads_works_writes_and_times():
     t = FakeTransport({"a.to-t": b"x" * 1000, "b.to-t": b"y" * 10}, node="m2")
     rec = fidelity_core.run(t, env(FID_INPUTS="a.to-t,b.to-t", FID_OUTPUTS="to-c:2000,to-d:0"))
     assert [(o, len(d)) for o, d in t.sent] == [("to-c", 2000), ("to-d", 0)]
-    assert len(set(t.sent[0][1])) > 200                      # random, not zeros
+    assert len(set(bytes(t.sent[0][1]))) > 200               # random, not zeros
     assert rec["bytesIn"] == 1010 and rec["bytesOut"] == 2000
     # sleep mode on m2 (speed 0.5): 0.05 / 0.5 = 0.1 s of compute
     assert 0.09 < rec["computeSeconds"] < 0.5
