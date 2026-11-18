@@ -170,7 +170,7 @@ def write_payload(f, data) -> None:
         f.write(data)
 
 
-PAYLOAD_CHUNK = 64 * 1024 * 1024
+PAYLOAD_CHUNK = 1024 * 1024    # 1 MiB: ~3 ms to generate; gzip window is 32 KB, so still incompressible
 _BLOCK: bytes | None = None
 
 
