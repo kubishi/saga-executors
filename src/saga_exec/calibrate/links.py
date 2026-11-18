@@ -112,12 +112,21 @@ def slurm_chain_plan(machine: str, size: int, case: str, consumer_machine: str |
 
 
 def transfer_seconds(results: dict) -> list[float]:
-    """results.json "tasks" -> consumer compute start - producer compute end, per chain."""
+    """results.json "tasks" -> data movement per chain: producer starts writing its
+    output -> consumer finishes reading it (precise task timelines; excludes the
+    producer's payload generation, an artifact of the dummy task). Chains whose
+    tasks did not complete are skipped."""
     out = []
     for name in sorted(results):
-        if name.startswith("p"):
-            p, c = results[name]["timings"], results["c" + name[1:]]["timings"]
-            out.append(c["computeStartUnix"] - p["computeEndUnix"])
+        if not name.startswith("p"):
+            continue
+        p, c = results[name], results.get("c" + name[1:], {})
+        if p.get("state") != "COMPLETED" or c.get("state") != "COMPLETED":
+            continue
+        pt, ct = p["timings"]["timeline"], c["timings"]["timeline"]
+        send_start = min(o["sendStartUnix"] for o in pt["outputs"])
+        read_end = max((i["readEndUnix"] for i in ct["inputs"]), default=ct["workStartUnix"])
+        out.append(read_end - send_start)
     return out
 
 

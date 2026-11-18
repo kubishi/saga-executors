@@ -124,8 +124,19 @@ def do_work(mode: str, seconds: float, speed: float, hash_rate: float | None) ->
 
 def payload(nbytes: int) -> bytes:
     """Random (incompressible) bytes. Wayline's agent can gzip pushes
-    (--push-compress gzip, off by default), and zeros would then be ~free."""
-    return random.randbytes(nbytes)
+    (--push-compress gzip, off by default), and zeros would then be ~free.
+
+    Generated in chunks: random.randbytes(n) overflows a C int when n * 8 bits
+    exceeds 2**31 (n > ~268 MB)."""
+    if nbytes <= PAYLOAD_CHUNK:
+        return random.randbytes(nbytes)
+    out = bytearray()
+    while len(out) < nbytes:
+        out += random.randbytes(min(PAYLOAD_CHUNK, nbytes - len(out)))
+    return bytes(out)
+
+
+PAYLOAD_CHUNK = 64 * 1024 * 1024
 
 
 def where() -> dict:

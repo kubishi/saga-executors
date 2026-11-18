@@ -1,3 +1,4 @@
+import re
 """Calibration, offline: machines.yaml writing, link plans and fits, the hash-rate worker."""
 
 import json
@@ -32,6 +33,8 @@ def test_summarize_speeds_and_hash_rate():
 def test_machines_yaml_update_keeps_the_file(tmp_path):
     path = tmp_path / "machines.yaml"
     original = (ROOT / "testbed" / "machines.yaml").read_text()
+    # start from an uncalibrated file, whatever the repo's machines.yaml holds now
+    original = re.sub(r"\n# BEGIN calibration.*?# END calibration\n?", "\n", original, flags=re.S)
     path.write_text(original)
     assert load_testbed(path).hash_rate("slurm") is None
     cpu.update_machines_yaml(ROWS, path)
@@ -72,7 +75,9 @@ def test_slurm_link_plans_and_fit():
     assert plan["p0"]["outputs"][0]["consumer_node"] == "cse-lambda1"
     with pytest.raises(ValueError):
         links.slurm_chain_plan("cse-isha", 5, "inter")
-    results = {"p0": {"timings": {"computeEndUnix": 10.0}}, "c0": {"timings": {"computeStartUnix": 10.5}}}
+    results = {"p0": {"state": "COMPLETED", "timings": {"timeline": {"outputs": [{"sendStartUnix": 10.0}]}}},
+               "c0": {"state": "COMPLETED", "timings": {"timeline": {"workStartUnix": 10.6,
+                                                                     "inputs": [{"readEndUnix": 10.5}]}}}}
     assert links.transfer_seconds(results) == [0.5]
     latency, bw = links.fit([0, 1e6, 2e6], [0.2, 0.21, 0.22])
     assert latency == pytest.approx(0.2) and bw == pytest.approx(1e8)

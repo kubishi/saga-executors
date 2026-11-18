@@ -161,7 +161,10 @@ def test_shared_fs_plan(tmp_path):
         saga_slurm.load_run_file(_write(tmp_path, transport="nfs"))
 
 
-def test_cpu_mode_needs_a_hash_rate(tmp_path):
+def test_cpu_mode_needs_a_hash_rate(tmp_path, monkeypatch):
+    # pretend machines.yaml has no CPU calibration
+    from saga_exec.testbed import Testbed
+    monkeypatch.setattr(Testbed, "hash_rate", lambda self, partition: None)
     with pytest.raises(SystemExit, match="hash_rate"):
         saga_slurm.prepare(_write(tmp_path, mode="cpu"))
     with pytest.raises(SystemExit):

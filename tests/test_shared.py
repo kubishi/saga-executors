@@ -64,7 +64,7 @@ def test_legacy_shared_network_matches_wayline_legacy():
 
     m = load_machines(MACHINES)
     shared = build_core_network(m, 3, sep="-", local_bandwidth=convert.LOCAL_BW)
-    theirs = convert.build_network(3, {"cse-lambda1": 1.0, "cse-isha": 1.0})
+    theirs = convert.build_network(3, dict(m.speed))
     assert {n.name: n.speed for n in shared.nodes} == {n.name: n.speed for n in theirs.nodes}
     for e in theirs.edges:
         assert shared.get_edge(e.source, e.target).speed == e.speed
