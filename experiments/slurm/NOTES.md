@@ -71,3 +71,11 @@ e +serial I/O); SAGA always under-predicts:
   reversals: epigenomics-l 2 s lo (predicted HEFT 3% faster, measured 3% slower)
   and genome-l 0.5 s hi (predicted HEFT 8% faster, measured CPOP 28% faster,
   a contention case). Other variants are similar (11-14 of 24 agree).
+- Remaining error (variant e) correlates with load on the lambda1-isha link
+  (Pearson r = 0.86 over 144 runs; `results/e3/figures/4_*`). Exception: high-CCR
+  runs where SAGA put every task on lambda1 (no link traffic) still miss by
+  20-50%, with large run-to-run variance (e.g. montage-s 2 s hi: 25 vs 38 s),
+  likely local storage / page-cache contention. A simple local-I/O load measure
+  does not explain it (r = 0.23).
+
+Figures: `uv run python analysis/e3_figures.py` -> `results/e3/figures/`.
