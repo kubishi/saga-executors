@@ -33,3 +33,15 @@ def test_link_transfer_seconds_uses_timeline_and_skips_failures():
         "c1": {"state": "SKIPPED"},
     }
     assert transfer_seconds(results) == [12.4 - 10.0]
+
+
+def test_payload_is_incompressible_and_fast():
+    import time
+    import zlib
+    data = fidelity_core.payload(8_000_000)
+    assert len(zlib.compress(data, 6)) > 0.99 * len(data)
+    fidelity_core.payload(1)                       # block generated once per process
+    t = time.perf_counter()
+    big = fidelity_core.payload(500_000_000)
+    assert len(big) == 500_000_000
+    assert time.perf_counter() - t < 1.0           # memory speed, not ~350 MB/s generation

@@ -123,20 +123,32 @@ def do_work(mode: str, seconds: float, speed: float, hash_rate: float | None) ->
 
 
 def payload(nbytes: int) -> bytes:
-    """Random (incompressible) bytes. Wayline's agent can gzip pushes
-    (--push-compress gzip, off by default), and zeros would then be ~free.
+    """Incompressible bytes, produced at memory speed.
 
-    Generated in chunks: random.randbytes(n) overflows a C int when n * 8 bits
-    exceeds 2**31 (n > ~268 MB)."""
-    if nbytes <= PAYLOAD_CHUNK:
-        return random.randbytes(nbytes)
-    out = bytearray()
-    while len(out) < nbytes:
-        out += random.randbytes(min(PAYLOAD_CHUNK, nbytes - len(out)))
-    return bytes(out)
+    Real tasks produce outputs as part of their compute; generating fresh random
+    bytes (~350 MB/s) would add a large artifact of this dummy task. So one random
+    block of PAYLOAD_CHUNK bytes is generated once per process and outputs are
+    that block repeated. Still incompressible for gzip (32 KB window), which is
+    what Wayline's agent can use for pushes (--push-compress, off by default);
+    zeros would be ~free there. Generation stays timed separately in the task's
+    timeline."""
+    block = _random_block()
+    if nbytes <= len(block):
+        return block[:nbytes]
+    reps, rest = divmod(nbytes, len(block))
+    return block * reps + block[:rest]
 
 
 PAYLOAD_CHUNK = 64 * 1024 * 1024
+_BLOCK: bytes | None = None
+
+
+def _random_block() -> bytes:
+    """One random block per process (random.randbytes overflows past ~268 MB)."""
+    global _BLOCK
+    if _BLOCK is None or len(_BLOCK) != PAYLOAD_CHUNK:
+        _BLOCK = random.randbytes(PAYLOAD_CHUNK)
+    return _BLOCK
 
 
 def where() -> dict:
