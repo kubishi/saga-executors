@@ -1,0 +1,503 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apiextensions.k8s.io/v1","kind":"CustomResourceDefinition","metadata":{"annotations":{},"name":"odags.wl.io"},"spec":{"group":"wl.io","names":{"kind":"ODAG","plural":"odags","shortNames":["odag"],"singular":"odag"},"scope":"Namespaced","versions":[{"additionalPrinterColumns":[{"jsonPath":".status.phase","name":"Phase","type":"string"},{"jsonPath":".spec.scheduler","name":"Scheduler","type":"string"},{"jsonPath":".status.makespan","name":"Makespan","type":"number"},{"jsonPath":".metadata.creationTimestamp","name":"Age","type":"date"}],"name":"v1","schema":{"openAPIV3Schema":{"properties":{"spec":{"properties":{"durability":{"description":"Which objects the data agents fsync. auto (default): final outputs and cacheKey outputs; all; none; node: each agent's --sync default.","enum":["auto","all","none","node"],"type":"string"},"realization":{"description":"Desired physical realization per intermediate object, revisable on the LIVE run: external policies patch this section and the controller reconciles the data plane toward it (create copies by agent-to-agent push, evict copies, change which copy serves future consumers). The template's graph is the initial binding; entries here override it per object without any graph change. Objects are named by their producing task, or \"task.output\" for a named output.\n","items":{"properties":{"copies":{"description":"Nodes that must hold a valid copy. Copies present on other nodes are NOT removed unless listed in evict (revisions are additive by default).\n","items":{"type":"string"},"type":"array"},"durable":{"description":"Make every installed copy durable in place (fsync); later copies inherit it.","type":"boolean"},"evict":{"description":"Nodes whose copy must be removed.","items":{"type":"string"},"type":"array"},"object":{"description":"Producing task whose output this governs.","type":"string"},"servingCopy":{"description":"Node whose copy serves future consumer installs. Empty keeps the producer's copy as the source.\n","type":"string"}},"required":["object"],"type":"object"},"type":"array"},"retryPolicy":{"properties":{"maxRetries":{"default":3,"minimum":0,"type":"integer"}},"type":"object"},"scheduler":{"default":"random","description":"Scheduler to use. Four forms: \"random\" / \"heft\" — compiled-in schedulers; \"saga/\u003cname\u003e\" — a built-in SAGA algorithm (heft, cpop, peft, minmin, maxmin, sufferage, ...); \"saga/\u003cdotted.path.ClassName\u003e\" — ANY importable saga.Scheduler subclass, so a scheduler developed and validated in simulation runs here unmodified (make it importable via WL_SAGA_PATH or WL_SAGA_EXTRA_PACKAGES on the sidecar); \"http(s)://host:port\" — any service implementing the scheduler contract, in any language. On failure of an external scheduler the controller falls back to the built-in HEFT scheduler.\n","type":"string"},"schedulerConfig":{"description":"Tunable knobs for the scheduler.","properties":{"enactOrder":{"description":"How much of an external scheduler's schedule to enact. Default (none) enacts PLACEMENT ONLY: dispatch is data-readiness driven, so independent ready tasks on one node may run concurrently or out of the scheduler's order. \"order\" starts tasks on each node in the scheduler's predicted order; \"serial\" additionally runs one task at a time per node, the machine model classical DAG schedulers assume. Claims about reproducing a scheduling algorithm's behaviour require order or serial.\n","enum":["","none","order","serial"],"type":"string"},"nodeOrder":{"description":"Explicit per-node execution order {node: [task, ...]}, for replaying a frozen schedule without re-invoking a scheduler. Enacted like enactOrder (default serial).\n","type":"object","x-kubernetes-preserve-unknown-fields":true},"options":{"description":"Free-form key/value options passed to an external scheduler as constructor keyword arguments (e.g. {alpha: 0.5}). Ignored by the built-in schedulers.\n","type":"object","x-kubernetes-preserve-unknown-fields":true},"spreadEpsilon":{"default":0,"description":"HEFT tie-breaking tolerance in seconds. Candidate nodes whose EFT is within spreadEpsilon of the minimum EFT are treated as tied, and the least-loaded node wins. 0 preserves strict HEFT (with least-loaded exact-tie break).\n","minimum":0,"type":"number"}},"type":"object"},"tasks":{"items":{"properties":{"args":{"items":{"type":"string"},"type":"array"},"cacheKey":{"description":"Opt-in cross-run reuse. If a previous run produced this task's output under the same key and the copy is still installed, the task does not execute: the controller pins it to the node holding the copy, aliases the bytes under this run's name, and serves consumers from there. Requires a data retention policy that keeps run data (keepLatest/none).","type":"string"},"command":{"items":{"type":"string"},"type":"array"},"constraints":{"properties":{"nodeNames":{"description":"If set, scheduler will only place this task on one of these nodes.","items":{"type":"string"},"type":"array"}},"type":"object"},"containerSecurityContext":{"description":"Container-level securityContext (privileged, capabilities, etc.). Applied verbatim as corev1.SecurityContext. Needed for device access: PodSecurityContext has no privileged field, and without a device plugin the container device cgroup denies /dev/dri access even with the render group.\n","type":"object","x-kubernetes-preserve-unknown-fields":true},"dataSize":{"description":"Expected output data size, e.g. \"100MB\". Used by scheduler for communication cost estimation.","type":"string"},"dependencies":{"default":[],"items":{"type":"string"},"type":"array"},"durable":{"description":"Durability of the task's default output, and the default for its named outputs. Unset: the run's spec.durability decides.","type":"boolean"},"env":{"items":{"properties":{"name":{"type":"string"},"value":{"type":"string"}},"required":["name"],"type":"object"},"type":"array"},"function":{"description":"Function to call on the runner (default: the task name).","type":"string"},"image":{"type":"string"},"inputs":{"description":"Which named object of a producer this task consumes. Refines an entry in dependencies; producers listed in dependencies without an inputs entry supply their default output.\n","items":{"properties":{"object":{"type":"string"},"producer":{"type":"string"}},"required":["producer"],"type":"object"},"type":"array"},"name":{"type":"string"},"outputs":{"description":"Named outputs. A task may emit several semantically distinct, immutable objects via send(\"\u003cname\u003e\", data); each has identity \u003crun, task, name\u003e (data-plane key \"task.name\"), its own consumer set (see inputs), and an independently revisable realization. Omit for the single default output.\n","items":{"properties":{"dataSize":{"type":"string"},"durable":{"description":"Fsync this object on every node that holds it (it must survive a crash). Unset: the run's spec.durability decides.","type":"boolean"},"name":{"type":"string"}},"required":["name"],"type":"object"},"type":"array"},"resources":{"properties":{"cpu":{"type":"string"},"memory":{"type":"string"}},"type":"object"},"runner":{"description":"Execute this task on the named warm runner (pods labeled wl.io/runner=\u003cname\u003e) on its assigned node instead of in a fresh pod. Same contract: the invocation gets the pod's environment and uses the same data-agent protocol. image names the runner's image; command is ignored.","type":"string"},"runtime":{"description":"Expected runtime in seconds. Used by scheduler for makespan estimation.","type":"integer"},"runtimeProfile":{"description":"Per-node runtime hints in seconds, carried over from the template. Without this field the run object prunes it and every node looks equally fast to an external scheduler, which silently destroys node-heterogeneity-aware placement.\n","type":"object","x-kubernetes-preserve-unknown-fields":true},"securityContext":{"description":"Pod-level securityContext (supplementalGroups, runAsUser, fsGroup, etc.). Applied verbatim as corev1.PodSecurityContext.\n","type":"object","x-kubernetes-preserve-unknown-fields":true},"type":{"description":"Vertex kind in the physical DAG. \"compute\" (default) runs the task's container. \"data\" holds/moves bytes with no pod: the controller realizes it through the data-agent (alias + push). A data vertex must have exactly one dependency and at least one successor.","enum":["compute","data"],"type":"string"},"volumeMounts":{"description":"Container-level volume mounts appended to the controller's base mounts. Each item is a standard K8s corev1.VolumeMount. Names must match a declared volume (either user-defined or controller-owned).\n","items":{"type":"object","x-kubernetes-preserve-unknown-fields":true},"type":"array"},"volumes":{"description":"Pod-level volumes appended to the controller's base mounts (wl-outputs, wl-shared). Each item is a standard K8s corev1.Volume. Reserved names (\"wl-outputs\", \"wl-shared\") are rejected at parse time.\n","items":{"type":"object","x-kubernetes-preserve-unknown-fields":true},"type":"array"}},"required":["name","image"],"type":"object"},"minItems":1,"type":"array"}},"required":["tasks"],"type":"object"},"status":{"properties":{"actualNetworkFlows":{"description":"Per-push observed network transfers recorded by the sender's data-agent.","items":{"properties":{"dataSize":{"format":"int64","type":"integer"},"dstNode":{"type":"string"},"end":{"description":"Observed wire end, seconds from ODAG startTime.","type":"number"},"fromTask":{"type":"string"},"ok":{"type":"boolean"},"srcNode":{"type":"string"},"start":{"description":"Observed wire start, seconds from ODAG startTime.","type":"number"},"toTask":{"type":"string"}},"type":"object"},"type":"array"},"completionTime":{"format":"date-time","type":"string"},"makespan":{"description":"Actual makespan in seconds (set on completion).","type":"number"},"message":{"type":"string"},"objects":{"description":"Actual per-object copy state as reconciled by the controller; the observable counterpart of spec.realization. One entry per object with revisions.\n","items":{"properties":{"copies":{"items":{"properties":{"node":{"type":"string"},"state":{"description":"Installed / Transferring / Evicted.","type":"string"}},"type":"object"},"type":"array"},"object":{"type":"string"},"servingCopy":{"type":"string"}},"type":"object"},"type":"array"},"phase":{"enum":["Pending","Scheduling","Running","Succeeded","Failed","Degraded"],"type":"string"},"predictedNetworkFlows":{"description":"Per-edge predicted network transfers under TCP fair-sharing contention.","items":{"properties":{"dataSize":{"description":"Bytes transferred.","format":"int64","type":"integer"},"dstNode":{"type":"string"},"end":{"description":"Transfer end time in seconds from t=0.","type":"number"},"fromTask":{"type":"string"},"srcNode":{"type":"string"},"start":{"description":"Transfer start time in seconds from t=0.","type":"number"},"toTask":{"type":"string"}},"type":"object"},"type":"array"},"predictedTasks":{"description":"Per-task predicted schedule computed at deployment time.","items":{"properties":{"estEnd":{"description":"Estimated finish time in seconds from t=0.","type":"number"},"estStart":{"description":"Estimated start time in seconds from t=0.","type":"number"},"name":{"type":"string"},"node":{"type":"string"}},"type":"object"},"type":"array"},"scheduling":{"description":"Which scheduler actually placed this run: requested, used (differs on fallback), fallbackError, and an external scheduler's own externalEstimatedMakespan.","type":"object","x-kubernetes-preserve-unknown-fields":true},"startTime":{"format":"date-time","type":"string"},"tasks":{"items":{"properties":{"cachedFrom":{"description":"For a cache-satisfied task: \"\u003codag\u003e/\u003ctask\u003e\" of the prior run's output this task was aliased from.","type":"string"},"completionTime":{"format":"date-time","type":"string"},"computeSeconds":{"description":"Time between the last input read and the first output handoff, reported by the SDK. This is the quantity a scheduler's cost model predicts. Absent for images predating the instrumented SDK.\n","type":"number"},"createdTime":{"description":"When the controller created this task's pod.","format":"date-time","type":"string"},"dataSize":{"description":"Output data size in bytes (parsed from spec.tasks[].dataSize).","type":"string"},"handoffSeconds":{"description":"Time for the local atomic install of this task's output (send() blocking phase); remote delivery continues after.\n","type":"number"},"inputReadSeconds":{"description":"Time spent reading dependency outputs from local storage.","type":"number"},"inputsReadyTime":{"description":"When the last dependency's output finished installing on this task's node, i.e. when the data-readiness gate opened. Unset for source tasks and when any dependency's install record is missing.\n","format":"date-time","type":"string"},"message":{"type":"string"},"name":{"type":"string"},"node":{"type":"string"},"phase":{"enum":["Pending","Running","Succeeded","Failed"],"type":"string"},"podName":{"type":"string"},"retries":{"type":"integer"},"sending":{"description":"True while the background data transfer thread is active.","type":"boolean"},"startTime":{"format":"date-time","type":"string"},"startupSeconds":{"description":"Pod creation to pod start: scheduling, image pull, sandbox creation. Overhead no scheduling model accounts for. Second-granularity (Kubernetes pod timestamps); use taskStartTime for sub-second boundaries.\n","type":"number"},"state":{"description":"Granular task state reported by data-agent (Scheduled/Executing/Sending/DataReady/Done/Failed).","type":"string"},"taskCloseTime":{"description":"When the task called close(). The gap to completionTime is pod teardown.\n","format":"date-time","type":"string"},"taskStartTime":{"description":"When the task's own code began (SDK init), sub-millisecond. The gap from startTime is interpreter boot and imports.\n","format":"date-time","type":"string"}},"type":"object"},"type":"array"}},"type":"object"}},"type":"object"}},"served":true,"storage":true,"subresources":{"status":{}}}]}}
+  creationTimestamp: "2026-10-21T23:32:33Z"
+  generation: 1
+  name: odags.wl.io
+  resourceVersion: "6238680"
+  uid: be4c07c4-bd97-4da5-b48c-4804f0786510
+spec:
+  conversion:
+    strategy: None
+  group: wl.io
+  names:
+    kind: ODAG
+    listKind: ODAGList
+    plural: odags
+    shortNames:
+    - odag
+    singular: odag
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .spec.scheduler
+      name: Scheduler
+      type: string
+    - jsonPath: .status.makespan
+      name: Makespan
+      type: number
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              durability:
+                description: 'Which objects the data agents fsync. auto (default):
+                  final outputs and cacheKey outputs; all; none; node: each agent''s
+                  --sync default.'
+                enum:
+                - auto
+                - all
+                - none
+                - node
+                type: string
+              realization:
+                description: |
+                  Desired physical realization per intermediate object, revisable on the LIVE run: external policies patch this section and the controller reconciles the data plane toward it (create copies by agent-to-agent push, evict copies, change which copy serves future consumers). The template's graph is the initial binding; entries here override it per object without any graph change. Objects are named by their producing task, or "task.output" for a named output.
+                items:
+                  properties:
+                    copies:
+                      description: |
+                        Nodes that must hold a valid copy. Copies present on other nodes are NOT removed unless listed in evict (revisions are additive by default).
+                      items:
+                        type: string
+                      type: array
+                    durable:
+                      description: Make every installed copy durable in place (fsync);
+                        later copies inherit it.
+                      type: boolean
+                    evict:
+                      description: Nodes whose copy must be removed.
+                      items:
+                        type: string
+                      type: array
+                    object:
+                      description: Producing task whose output this governs.
+                      type: string
+                    servingCopy:
+                      description: |
+                        Node whose copy serves future consumer installs. Empty keeps the producer's copy as the source.
+                      type: string
+                  required:
+                  - object
+                  type: object
+                type: array
+              retryPolicy:
+                properties:
+                  maxRetries:
+                    default: 3
+                    minimum: 0
+                    type: integer
+                type: object
+              scheduler:
+                default: random
+                description: |
+                  Scheduler to use. Four forms: "random" / "heft" — compiled-in schedulers; "saga/<name>" — a built-in SAGA algorithm (heft, cpop, peft, minmin, maxmin, sufferage, ...); "saga/<dotted.path.ClassName>" — ANY importable saga.Scheduler subclass, so a scheduler developed and validated in simulation runs here unmodified (make it importable via WL_SAGA_PATH or WL_SAGA_EXTRA_PACKAGES on the sidecar); "http(s)://host:port" — any service implementing the scheduler contract, in any language. On failure of an external scheduler the controller falls back to the built-in HEFT scheduler.
+                type: string
+              schedulerConfig:
+                description: Tunable knobs for the scheduler.
+                properties:
+                  enactOrder:
+                    description: |
+                      How much of an external scheduler's schedule to enact. Default (none) enacts PLACEMENT ONLY: dispatch is data-readiness driven, so independent ready tasks on one node may run concurrently or out of the scheduler's order. "order" starts tasks on each node in the scheduler's predicted order; "serial" additionally runs one task at a time per node, the machine model classical DAG schedulers assume. Claims about reproducing a scheduling algorithm's behaviour require order or serial.
+                    enum:
+                    - ""
+                    - none
+                    - order
+                    - serial
+                    type: string
+                  nodeOrder:
+                    description: |
+                      Explicit per-node execution order {node: [task, ...]}, for replaying a frozen schedule without re-invoking a scheduler. Enacted like enactOrder (default serial).
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  options:
+                    description: |
+                      Free-form key/value options passed to an external scheduler as constructor keyword arguments (e.g. {alpha: 0.5}). Ignored by the built-in schedulers.
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  spreadEpsilon:
+                    default: 0
+                    description: |
+                      HEFT tie-breaking tolerance in seconds. Candidate nodes whose EFT is within spreadEpsilon of the minimum EFT are treated as tied, and the least-loaded node wins. 0 preserves strict HEFT (with least-loaded exact-tie break).
+                    minimum: 0
+                    type: number
+                type: object
+              tasks:
+                items:
+                  properties:
+                    args:
+                      items:
+                        type: string
+                      type: array
+                    cacheKey:
+                      description: 'Opt-in cross-run reuse. If a previous run produced
+                        this task''s output under the same key and the copy is still
+                        installed, the task does not execute: the controller pins
+                        it to the node holding the copy, aliases the bytes under this
+                        run''s name, and serves consumers from there. Requires a data
+                        retention policy that keeps run data (keepLatest/none).'
+                      type: string
+                    command:
+                      items:
+                        type: string
+                      type: array
+                    constraints:
+                      properties:
+                        nodeNames:
+                          description: If set, scheduler will only place this task
+                            on one of these nodes.
+                          items:
+                            type: string
+                          type: array
+                      type: object
+                    containerSecurityContext:
+                      description: |
+                        Container-level securityContext (privileged, capabilities, etc.). Applied verbatim as corev1.SecurityContext. Needed for device access: PodSecurityContext has no privileged field, and without a device plugin the container device cgroup denies /dev/dri access even with the render group.
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                    dataSize:
+                      description: Expected output data size, e.g. "100MB". Used by
+                        scheduler for communication cost estimation.
+                      type: string
+                    dependencies:
+                      default: []
+                      items:
+                        type: string
+                      type: array
+                    durable:
+                      description: 'Durability of the task''s default output, and
+                        the default for its named outputs. Unset: the run''s spec.durability
+                        decides.'
+                      type: boolean
+                    env:
+                      items:
+                        properties:
+                          name:
+                            type: string
+                          value:
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      type: array
+                    function:
+                      description: 'Function to call on the runner (default: the task
+                        name).'
+                      type: string
+                    image:
+                      type: string
+                    inputs:
+                      description: |
+                        Which named object of a producer this task consumes. Refines an entry in dependencies; producers listed in dependencies without an inputs entry supply their default output.
+                      items:
+                        properties:
+                          object:
+                            type: string
+                          producer:
+                            type: string
+                        required:
+                        - producer
+                        type: object
+                      type: array
+                    name:
+                      type: string
+                    outputs:
+                      description: |
+                        Named outputs. A task may emit several semantically distinct, immutable objects via send("<name>", data); each has identity <run, task, name> (data-plane key "task.name"), its own consumer set (see inputs), and an independently revisable realization. Omit for the single default output.
+                      items:
+                        properties:
+                          dataSize:
+                            type: string
+                          durable:
+                            description: 'Fsync this object on every node that holds
+                              it (it must survive a crash). Unset: the run''s spec.durability
+                              decides.'
+                            type: boolean
+                          name:
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      type: array
+                    resources:
+                      properties:
+                        cpu:
+                          type: string
+                        memory:
+                          type: string
+                      type: object
+                    runner:
+                      description: 'Execute this task on the named warm runner (pods
+                        labeled wl.io/runner=<name>) on its assigned node instead
+                        of in a fresh pod. Same contract: the invocation gets the
+                        pod''s environment and uses the same data-agent protocol.
+                        image names the runner''s image; command is ignored.'
+                      type: string
+                    runtime:
+                      description: Expected runtime in seconds. Used by scheduler
+                        for makespan estimation.
+                      type: integer
+                    runtimeProfile:
+                      description: |
+                        Per-node runtime hints in seconds, carried over from the template. Without this field the run object prunes it and every node looks equally fast to an external scheduler, which silently destroys node-heterogeneity-aware placement.
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                    securityContext:
+                      description: |
+                        Pod-level securityContext (supplementalGroups, runAsUser, fsGroup, etc.). Applied verbatim as corev1.PodSecurityContext.
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                    type:
+                      description: 'Vertex kind in the physical DAG. "compute" (default)
+                        runs the task''s container. "data" holds/moves bytes with
+                        no pod: the controller realizes it through the data-agent
+                        (alias + push). A data vertex must have exactly one dependency
+                        and at least one successor.'
+                      enum:
+                      - compute
+                      - data
+                      type: string
+                    volumeMounts:
+                      description: |
+                        Container-level volume mounts appended to the controller's base mounts. Each item is a standard K8s corev1.VolumeMount. Names must match a declared volume (either user-defined or controller-owned).
+                      items:
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
+                      type: array
+                    volumes:
+                      description: |
+                        Pod-level volumes appended to the controller's base mounts (wl-outputs, wl-shared). Each item is a standard K8s corev1.Volume. Reserved names ("wl-outputs", "wl-shared") are rejected at parse time.
+                      items:
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
+                      type: array
+                  required:
+                  - name
+                  - image
+                  type: object
+                minItems: 1
+                type: array
+            required:
+            - tasks
+            type: object
+          status:
+            properties:
+              actualNetworkFlows:
+                description: Per-push observed network transfers recorded by the sender's
+                  data-agent.
+                items:
+                  properties:
+                    dataSize:
+                      format: int64
+                      type: integer
+                    dstNode:
+                      type: string
+                    end:
+                      description: Observed wire end, seconds from ODAG startTime.
+                      type: number
+                    fromTask:
+                      type: string
+                    ok:
+                      type: boolean
+                    srcNode:
+                      type: string
+                    start:
+                      description: Observed wire start, seconds from ODAG startTime.
+                      type: number
+                    toTask:
+                      type: string
+                  type: object
+                type: array
+              completionTime:
+                format: date-time
+                type: string
+              makespan:
+                description: Actual makespan in seconds (set on completion).
+                type: number
+              message:
+                type: string
+              objects:
+                description: |
+                  Actual per-object copy state as reconciled by the controller; the observable counterpart of spec.realization. One entry per object with revisions.
+                items:
+                  properties:
+                    copies:
+                      items:
+                        properties:
+                          node:
+                            type: string
+                          state:
+                            description: Installed / Transferring / Evicted.
+                            type: string
+                        type: object
+                      type: array
+                    object:
+                      type: string
+                    servingCopy:
+                      type: string
+                  type: object
+                type: array
+              phase:
+                enum:
+                - Pending
+                - Scheduling
+                - Running
+                - Succeeded
+                - Failed
+                - Degraded
+                type: string
+              predictedNetworkFlows:
+                description: Per-edge predicted network transfers under TCP fair-sharing
+                  contention.
+                items:
+                  properties:
+                    dataSize:
+                      description: Bytes transferred.
+                      format: int64
+                      type: integer
+                    dstNode:
+                      type: string
+                    end:
+                      description: Transfer end time in seconds from t=0.
+                      type: number
+                    fromTask:
+                      type: string
+                    srcNode:
+                      type: string
+                    start:
+                      description: Transfer start time in seconds from t=0.
+                      type: number
+                    toTask:
+                      type: string
+                  type: object
+                type: array
+              predictedTasks:
+                description: Per-task predicted schedule computed at deployment time.
+                items:
+                  properties:
+                    estEnd:
+                      description: Estimated finish time in seconds from t=0.
+                      type: number
+                    estStart:
+                      description: Estimated start time in seconds from t=0.
+                      type: number
+                    name:
+                      type: string
+                    node:
+                      type: string
+                  type: object
+                type: array
+              scheduling:
+                description: 'Which scheduler actually placed this run: requested,
+                  used (differs on fallback), fallbackError, and an external scheduler''s
+                  own externalEstimatedMakespan.'
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+              startTime:
+                format: date-time
+                type: string
+              tasks:
+                items:
+                  properties:
+                    cachedFrom:
+                      description: 'For a cache-satisfied task: "<odag>/<task>" of
+                        the prior run''s output this task was aliased from.'
+                      type: string
+                    completionTime:
+                      format: date-time
+                      type: string
+                    computeSeconds:
+                      description: |
+                        Time between the last input read and the first output handoff, reported by the SDK. This is the quantity a scheduler's cost model predicts. Absent for images predating the instrumented SDK.
+                      type: number
+                    createdTime:
+                      description: When the controller created this task's pod.
+                      format: date-time
+                      type: string
+                    dataSize:
+                      description: Output data size in bytes (parsed from spec.tasks[].dataSize).
+                      type: string
+                    handoffSeconds:
+                      description: |
+                        Time for the local atomic install of this task's output (send() blocking phase); remote delivery continues after.
+                      type: number
+                    inputReadSeconds:
+                      description: Time spent reading dependency outputs from local
+                        storage.
+                      type: number
+                    inputsReadyTime:
+                      description: |
+                        When the last dependency's output finished installing on this task's node, i.e. when the data-readiness gate opened. Unset for source tasks and when any dependency's install record is missing.
+                      format: date-time
+                      type: string
+                    message:
+                      type: string
+                    name:
+                      type: string
+                    node:
+                      type: string
+                    phase:
+                      enum:
+                      - Pending
+                      - Running
+                      - Succeeded
+                      - Failed
+                      type: string
+                    podName:
+                      type: string
+                    retries:
+                      type: integer
+                    sending:
+                      description: True while the background data transfer thread
+                        is active.
+                      type: boolean
+                    startTime:
+                      format: date-time
+                      type: string
+                    startupSeconds:
+                      description: |
+                        Pod creation to pod start: scheduling, image pull, sandbox creation. Overhead no scheduling model accounts for. Second-granularity (Kubernetes pod timestamps); use taskStartTime for sub-second boundaries.
+                      type: number
+                    state:
+                      description: Granular task state reported by data-agent (Scheduled/Executing/Sending/DataReady/Done/Failed).
+                      type: string
+                    taskCloseTime:
+                      description: |
+                        When the task called close(). The gap to completionTime is pod teardown.
+                      format: date-time
+                      type: string
+                    taskStartTime:
+                      description: |
+                        When the task's own code began (SDK init), sub-millisecond. The gap from startTime is interpreter boot and imports.
+                      format: date-time
+                      type: string
+                  type: object
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ODAG
+    listKind: ODAGList
+    plural: odags
+    shortNames:
+    - odag
+    singular: odag
+  conditions:
+  - lastTransitionTime: "2026-10-21T23:32:33Z"
+    message: no conflicts found
+    reason: NoConflicts
+    status: "True"
+    type: NamesAccepted
+  - lastTransitionTime: "2026-10-21T23:32:33Z"
+    message: the initial names have been accepted
+    reason: InitialNamesAccepted
+    status: "True"
+    type: Established
+  storedVersions:
+  - v1

@@ -56,7 +56,8 @@ from saga_exec.scheduling import (
 )
 from saga_exec.testbed import Testbed, load_testbed
 
-IMAGE = "cse-lambda1:5000/wl-fidelity-task:latest"
+# Task image built from task/ with the deployed Wayline commit (testbed/k8s/README.md).
+IMAGE = "cse-lambda1:5000/wl-fidelity-task:saga-exec-940910d"
 NAMESPACE = "wl-runs"
 CONFIGMAP_NAME = "wl-network-profile"   # wayline bandwidth.go
 CONFIGMAP_NAMESPACE = "wl-system"

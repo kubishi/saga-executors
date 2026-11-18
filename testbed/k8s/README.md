@@ -8,9 +8,9 @@ registry `cse-lambda1:5000`) and **cse-isha** (worker). Set up by Nick Laus.
 | Piece | Where it runs | Needs |
 |---|---|---|
 | `convert.py` (+ `experiments/wayline/generate.py`) | anywhere | this package only (incl. Wayline's bridge, `wl-saga-sidecar`, for the offline prediction). No cluster. |
-| `run.py` | cse-lambda1 | **`kubectl`** on PATH with a kubeconfig for the cluster, Wayline's CRDs (`ODAGTemplate`, `ODAG`, group `wl.io/v1`) and controller deployed **from Wayline branch `saga-executor`** (records SAGA's prediction in `status.scheduling`) **with a working `saga-sidecar` container** (built from the same SAGA as `uv.lock`; the `cse-lambda1:5000` registry has no `wl-saga-sidecar` image as of 2026-11-17), namespace `wl-runs`. Applies each folder's `network-profile.yml` (ConfigMap `wl-system/wl-network-profile`, from `machines.yaml`). It does **not** use the `wl`/`wayline` CLI binary or the Wayline Python SDK: it reimplements `wayline run` by creating an `ODAG` from the template with `kubectl create`. |
+| `run.py` | cse-lambda1 | **`kubectl`** on PATH with a kubeconfig for the cluster, Wayline's CRDs (`ODAGTemplate`, `ODAG`, group `wl.io/v1`) and controller deployed **from Wayline branch `saga-executor`** (records SAGA's prediction in `status.scheduling`) **with a working `saga-sidecar` container** (built from the same SAGA as `uv.lock`; deployed 2026-11-18, see below), namespace `wl-runs`. Applies each folder's `network-profile.yml` (ConfigMap `wl-system/wl-network-profile`, from `machines.yaml`). It does **not** use the `wl`/`wayline` CLI binary or the Wayline Python SDK: it reimplements `wayline run` by creating an `ODAG` from the template with `kubectl create`. |
 | `analyze.py` | anywhere | this package (matplotlib, `saga.utils.draw`). Reads saved `status.json`: SAGA's prediction from `status.scheduling`, measured times from the SDK. |
-| `task/task.py` | inside pods | Wayline Python SDK `wl` (`sdk/python/wl` in the Wayline repo, needs `pyzmq`), baked into the image `cse-lambda1:5000/wl-fidelity-task:latest` (see `task/Dockerfile`). |
+| `task/task.py` | inside pods | Wayline Python SDK `wl` (`sdk/python/wl` in the Wayline repo, needs `pyzmq`), baked into the image `cse-lambda1:5000/wl-fidelity-task:saga-exec-940910d` (Python 3.12.8) (see `task/Dockerfile`). |
 
 So the Python SDK is **not** a dependency of `saga-executors`; it is only
 copied into the task image from a Wayline checkout. Because of that no uv git
@@ -22,6 +22,45 @@ wayline-sdk = { git = "https://github.com/ANRGUSC/wayline", subdirectory = "sdk/
 ```
 
 ## Deployed Wayline version
+
+**Since 2026-11-18** (deployed by Jared via Claude Code): Wayline branch
+`saga-executor` @ `940910d` (= upstream `main` @ `811c951` + our three
+instrumentation/bridge commits), SAGA 2.1.0. Images in `cse-lambda1:5000`, all tagged
+`saga-exec-940910d` (the `latest` tags were left untouched):
+
+| image | used by |
+|---|---|
+| `wl-odag-controller:saga-exec-940910d` | `wl-system/odag-controller` container `odag-controller` |
+| `wl-saga-sidecar:saga-exec-940910d` | same pod, container `saga-sidecar` (first working sidecar on this cluster) |
+| `wl-data-agent:saga-exec-940910d` | `wl-system/data-agent` DaemonSet |
+| `wl-fidelity-task:saga-exec-940910d` | task pods (`convert.IMAGE`) |
+
+CRDs `odags.wl.io` and `odagtemplates.wl.io` were re-applied from that commit
+(additive schema). Before the change: controller + data agent ran `:latest` (Nick's
+lab build, `4168029`) and the sidecar container was in ImagePullBackOff (no image).
+Backup of the previous objects: `backup-2026-11-18/`.
+
+Rebuild (from the repo root; sidecar needs a SAGA wheel first):
+
+```bash
+(cd external/saga && uv build --wheel -o ../wayline/saga-sidecar/wheels)
+T=saga-exec-$(git -C external/wayline rev-parse --short HEAD); R=localhost:5000
+(cd external/wayline && docker build -f cmd/odag-controller/Dockerfile -t $R/wl-odag-controller:$T . \
+  && docker build -f cmd/data-agent/Dockerfile -t $R/wl-data-agent:$T . \
+  && docker build -t $R/wl-saga-sidecar:$T saga-sidecar/)
+docker build -f task/Dockerfile --build-context wayline=external/wayline -t $R/wl-fidelity-task:$T task/
+for i in wl-odag-controller wl-data-agent wl-saga-sidecar wl-fidelity-task; do docker push $R/$i:$T; done
+```
+
+Roll back to the previous deployment:
+
+```bash
+kubectl -n wl-system rollout undo deploy/odag-controller
+kubectl -n wl-system rollout undo ds/data-agent
+kubectl replace -f testbed/k8s/backup-2026-11-18/odags.wl.io.yaml -f testbed/k8s/backup-2026-11-18/odagtemplates.wl.io.yaml
+```
+
+### Before 2026-11-18
 
 The smoke results (2026-11-05) were produced with Nick's fork:
 

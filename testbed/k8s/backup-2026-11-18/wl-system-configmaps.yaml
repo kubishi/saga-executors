@@ -1,0 +1,21 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    cse-isha_to_cse-lambda1: '117625000'
+    cse-lambda1_to_cse-isha: '117000000'
+    defaultBandwidth: '125000000'
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: '{"apiVersion":"v1","data":{"cse-isha_to_cse-lambda1":"117625000","cse-lambda1_to_cse-isha":"117000000","defaultBandwidth":"125000000"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"wl-network-profile","namespace":"wl-system"}}
+
+        '
+    creationTimestamp: '2026-10-21T23:36:02Z'
+    name: wl-network-profile
+    namespace: wl-system
+    resourceVersion: '7262305'
+    uid: 3968c3ac-837a-43d7-97b2-41369efbdfc3
+kind: List
+metadata:
+  resourceVersion: ''

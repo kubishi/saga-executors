@@ -42,7 +42,7 @@ spec:
       keepRuns: 1
   tasks:
   - name: a
-    image: cse-lambda1:5000/wl-fidelity-task:latest
+    image: cse-lambda1:5000/wl-fidelity-task:saga-exec-940910d
     command:
     - python
     - task.py
@@ -73,7 +73,7 @@ spec:
     - name: to-c
       dataSize: '20000000'
   - name: b
-    image: cse-lambda1:5000/wl-fidelity-task:latest
+    image: cse-lambda1:5000/wl-fidelity-task:saga-exec-940910d
     command:
     - python
     - task.py
@@ -106,7 +106,7 @@ spec:
     - name: to-d
       dataSize: '5000000'
   - name: c
-    image: cse-lambda1:5000/wl-fidelity-task:latest
+    image: cse-lambda1:5000/wl-fidelity-task:saga-exec-940910d
     command:
     - python
     - task.py
@@ -139,7 +139,7 @@ spec:
     - name: to-d
       dataSize: '5000000'
   - name: d
-    image: cse-lambda1:5000/wl-fidelity-task:latest
+    image: cse-lambda1:5000/wl-fidelity-task:saga-exec-940910d
     command:
     - python
     - task.py

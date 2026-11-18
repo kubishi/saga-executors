@@ -1,0 +1,425 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apiextensions.k8s.io/v1","kind":"CustomResourceDefinition","metadata":{"annotations":{},"name":"odagtemplates.wl.io"},"spec":{"group":"wl.io","names":{"kind":"ODAGTemplate","plural":"odagtemplates","shortNames":["odagt"],"singular":"odagtemplate"},"scope":"Namespaced","versions":[{"additionalPrinterColumns":[{"jsonPath":".spec.scheduler","name":"Scheduler","type":"string"},{"description":"Number of tasks (shown as array length by kubectl).","jsonPath":".spec.tasks","name":"Tasks","type":"integer"},{"jsonPath":".spec.profiling.enabled","name":"Profiling","type":"boolean"},{"jsonPath":".status.runCount","name":"Runs","type":"integer"},{"jsonPath":".status.lastRunMakespan","name":"Last Makespan","type":"number"},{"jsonPath":".metadata.creationTimestamp","name":"Age","type":"date"}],"name":"v1","schema":{"openAPIV3Schema":{"properties":{"spec":{"properties":{"defaults":{"description":"Fallback values for tasks that omit runtime/dataSize hints.","properties":{"dataSize":{"default":"0","description":"Default expected output data size (e.g. \"10MB\").","type":"string"},"resources":{"description":"Default resource requests for tasks that omit them. Schedulers plan with a task's CPU request as its demand on a node, and the pod requests the same, so what is planned is what the kubelet admits. Without this or a task's own request, a task requests 1 CPU.","properties":{"cpu":{"type":"string"},"memory":{"type":"string"}},"type":"object"},"runtime":{"default":10,"description":"Default expected runtime in seconds.","type":"number"}},"type":"object"},"description":{"description":"Human-readable description of this DAG template.","type":"string"},"durability":{"description":"Which objects the data agents fsync. auto (default): final outputs and cacheKey outputs; all; none; node: each agent's --sync default.","enum":["auto","all","none","node"],"type":"string"},"profiling":{"description":"Controls runtime/data profiling across runs.","properties":{"bandwidthSource":{"default":"external","description":"How to resolve link bandwidth. \"external\" uses the wl-network-profile ConfigMap. \"profiler\" uses profiler-observed transfer rates. \"hybrid\" tries profiler first, then ConfigMap.\n","enum":["external","profiler","hybrid"],"type":"string"},"emaAlpha":{"default":0.3,"description":"EMA smoothing factor. Higher values weight recent observations more.","maximum":1,"minimum":0,"type":"number"},"enabled":{"default":true,"description":"Enable profiling of task runtimes and data sizes.","type":"boolean"},"maxSamples":{"default":100,"description":"Maximum sample count to retain per profile entry.","minimum":1,"type":"integer"},"minSamples":{"default":3,"description":"Minimum profiler samples before data is trusted over spec hints.","minimum":1,"type":"integer"},"runtimeSource":{"default":"profiler","description":"How to resolve task runtimes. \"manual\" uses only spec hints. \"profiler\" uses profiler DB with spec hints as fallback. \"hybrid\" is the same as profiler (reserved for future weighted blending).\n","enum":["manual","profiler","hybrid"],"type":"string"},"warmupRuns":{"default":0,"description":"Number of initial runs to skip before recording profiles (cold-start effects).","minimum":0,"type":"integer"}},"type":"object"},"retention":{"description":"Controls garbage collection of old run CRs and on-disk data.","properties":{"data":{"description":"Controls on-disk data retention on worker nodes (/data/wl-outputs). Policies compose: keepRuns evicts oldest beyond K, maxSizePerNode enforces a hard cap, deleteDelay defers cleanup.\n","properties":{"deleteDelay":{"default":"0s","description":"How long to wait after run completion before deleting data. Only effective when policy is \"delayed\" (e.g. \"10m\", \"1h\"). Parsed as a Go duration.\n","type":"string"},"keepRuns":{"default":3,"description":"Number of recent completed runs whose data to keep on each node. Only effective when policy is \"keepLatest\". 0 means keep none (equivalent to \"immediate\").\n","minimum":0,"type":"integer"},"maxSizePerNode":{"default":"0","description":"Hard cap on total data size per node for this template's runs (e.g. \"2Gi\", \"500Mi\"). Oldest run data is evicted first when the cap is exceeded. \"0\" means no size limit. Composable with any policy.\n","type":"string"},"policy":{"default":"keepLatest","description":"\"immediate\" deletes run data as soon as the ODAG completes. \"delayed\" waits deleteDelay before cleanup. \"keepLatest\" keeps data from the last keepRuns completed runs. \"none\" disables automatic data cleanup (manual only).\n","enum":["immediate","delayed","keepLatest","none"],"type":"string"}},"type":"object"},"maxRuns":{"default":50,"description":"Maximum number of completed ODAG runs to keep. Oldest are deleted first.","minimum":1,"type":"integer"}},"type":"object"},"retryPolicy":{"properties":{"maxRetries":{"default":3,"minimum":0,"type":"integer"}},"type":"object"},"scheduler":{"default":"random","description":"Scheduler to use. Four forms: \"random\" / \"heft\" — compiled-in schedulers; \"saga/\u003cname\u003e\" — a built-in SAGA algorithm (heft, cpop, peft, minmin, maxmin, sufferage, ...); \"saga/\u003cdotted.path.ClassName\u003e\" — ANY importable saga.Scheduler subclass, so a scheduler developed and validated in simulation runs here unmodified (make it importable via WL_SAGA_PATH or WL_SAGA_EXTRA_PACKAGES on the sidecar); \"http(s)://host:port\" — any service implementing the scheduler contract, in any language. On failure of an external scheduler the controller falls back to the built-in HEFT scheduler.\n","type":"string"},"schedulerConfig":{"description":"Tunable knobs for the scheduler.","properties":{"enactOrder":{"description":"How much of an external scheduler's schedule to enact. Default (none) enacts PLACEMENT ONLY: dispatch is data-readiness driven, so independent ready tasks on one node may run concurrently or out of the scheduler's order. \"order\" starts tasks on each node in the scheduler's predicted order; \"serial\" additionally runs one task at a time per node, the machine model classical DAG schedulers assume. Claims about reproducing a scheduling algorithm's behaviour require order or serial.\n","enum":["","none","order","serial"],"type":"string"},"nodeOrder":{"description":"Explicit per-node execution order {node: [task, ...]}, for replaying a frozen schedule without re-invoking a scheduler. Enacted like enactOrder (default serial).\n","type":"object","x-kubernetes-preserve-unknown-fields":true},"options":{"description":"Free-form key/value options passed to an external scheduler as constructor keyword arguments (e.g. {alpha: 0.5}). Ignored by the built-in schedulers.\n","type":"object","x-kubernetes-preserve-unknown-fields":true},"spreadEpsilon":{"default":0,"description":"HEFT tie-breaking tolerance in seconds. Candidate nodes whose EFT is within spreadEpsilon of the minimum EFT are treated as tied, and the least-loaded node wins. 0 preserves strict HEFT (with least-loaded exact-tie break). Larger values trade a small predicted-makespan penalty for better spread and improved resilience to runtime noise / stragglers.\n","minimum":0,"type":"number"}},"type":"object"},"tasks":{"items":{"properties":{"args":{"items":{"type":"string"},"type":"array"},"cacheKey":{"description":"Opt-in cross-run reuse. If a previous run produced this task's output under the same key and the copy is still installed, the task does not execute: the controller pins it to the node holding the copy, aliases the bytes under this run's name, and serves consumers from there. Requires a data retention policy that keeps run data (keepLatest/none).","type":"string"},"command":{"items":{"type":"string"},"type":"array"},"constraints":{"properties":{"nodeNames":{"description":"If set, scheduler will only place this task on one of these nodes.","items":{"type":"string"},"type":"array"}},"type":"object"},"containerSecurityContext":{"description":"Container-level securityContext (privileged, capabilities, etc.). Applied verbatim as corev1.SecurityContext. Needed for device access: PodSecurityContext has no privileged field, and without a device plugin the container device cgroup denies /dev/dri access even with the render group.\n","type":"object","x-kubernetes-preserve-unknown-fields":true},"dataSize":{"description":"Optional hint for expected output data size (e.g. \"100MB\"). Used by HEFT scheduler if no profiler data exists.","type":"string"},"dependencies":{"default":[],"items":{"type":"string"},"type":"array"},"durable":{"description":"Durability of the task's default output, and the default for its named outputs. Unset: the run's spec.durability decides.","type":"boolean"},"env":{"items":{"properties":{"name":{"type":"string"},"value":{"type":"string"}},"required":["name"],"type":"object"},"type":"array"},"function":{"description":"Function to call on the runner (default: the task name).","type":"string"},"image":{"type":"string"},"inputs":{"description":"Which named object of a producer this task consumes. Refines an entry in dependencies; producers listed in dependencies without an inputs entry supply their default output.\n","items":{"properties":{"object":{"type":"string"},"producer":{"type":"string"}},"required":["producer"],"type":"object"},"type":"array"},"name":{"type":"string"},"outputs":{"description":"Named outputs. A task may emit several semantically distinct, immutable objects via send(\"\u003cname\u003e\", data); each has identity \u003crun, task, name\u003e (data-plane key \"task.name\"), its own consumer set (see inputs), and an independently revisable realization. Omit for the single default output.\n","items":{"properties":{"dataSize":{"type":"string"},"durable":{"description":"Fsync this object on every node that holds it (it must survive a crash). Unset: the run's spec.durability decides.","type":"boolean"},"name":{"type":"string"}},"required":["name"],"type":"object"},"type":"array"},"resources":{"properties":{"cpu":{"type":"string"},"memory":{"type":"string"}},"type":"object"},"runner":{"description":"Execute this task on the named warm runner (pods labeled wl.io/runner=\u003cname\u003e) on its assigned node instead of in a fresh pod. Same contract: the invocation gets the pod's environment and uses the same data-agent protocol. image names the runner's image; command is ignored.","type":"string"},"runtime":{"description":"Optional scalar hint for expected runtime in seconds. Used as fallback when runtimeProfile has no entry for a node.","type":"number"},"runtimeProfile":{"description":"Per-node runtime hints in seconds. Keys are node names, values are expected runtimes. Example: {\"anrg-3\": 6, \"anrg-8\": 12}. Takes priority over the scalar runtime field. Profiler data (if available) takes priority over this.\n","type":"object","x-kubernetes-preserve-unknown-fields":true},"securityContext":{"description":"Pod-level securityContext (supplementalGroups, runAsUser, fsGroup, etc.). Applied verbatim as corev1.PodSecurityContext.\n","type":"object","x-kubernetes-preserve-unknown-fields":true},"type":{"description":"Vertex kind in the physical DAG. \"compute\" (default) runs the task's container. \"data\" holds/moves bytes with no pod: the controller realizes it through the data-agent (alias + push). A data vertex must have exactly one dependency and at least one successor.","enum":["compute","data"],"type":"string"},"volumeMounts":{"description":"Container-level volume mounts appended to the controller's base mounts. Each item is a standard K8s corev1.VolumeMount. Names must match a declared volume (either user-defined or controller-owned).\n","items":{"type":"object","x-kubernetes-preserve-unknown-fields":true},"type":"array"},"volumes":{"description":"Pod-level volumes appended to the controller's base mounts (wl-outputs, wl-shared). Each item is a standard K8s corev1.Volume. Reserved names (\"wl-outputs\", \"wl-shared\") are rejected at parse time.\n","items":{"type":"object","x-kubernetes-preserve-unknown-fields":true},"type":"array"}},"required":["name","image"],"type":"object"},"minItems":1,"type":"array"}},"required":["tasks"],"type":"object"},"status":{"properties":{"lastRunMakespan":{"description":"Makespan (seconds) of the most recent completed run.","type":"number"},"lastRunName":{"description":"Name of the most recent ODAG run.","type":"string"},"lastRunPhase":{"description":"Phase of the most recent run.","type":"string"},"profileSummary":{"description":"Condensed task-node runtime matrix from the profiler. Structure: { \"taskName\": { \"nodeName\": runtimeSeconds, ... }, ... }\n","type":"object","x-kubernetes-preserve-unknown-fields":true},"runCount":{"description":"Total number of runs triggered from this template.","type":"integer"}},"type":"object"}},"type":"object"}},"served":true,"storage":true,"subresources":{"status":{}}}]}}
+  creationTimestamp: "2026-10-21T23:32:33Z"
+  generation: 1
+  name: odagtemplates.wl.io
+  resourceVersion: "6238683"
+  uid: 14f78b70-887b-4e27-abff-7628a7effc09
+spec:
+  conversion:
+    strategy: None
+  group: wl.io
+  names:
+    kind: ODAGTemplate
+    listKind: ODAGTemplateList
+    plural: odagtemplates
+    shortNames:
+    - odagt
+    singular: odagtemplate
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.scheduler
+      name: Scheduler
+      type: string
+    - description: Number of tasks (shown as array length by kubectl).
+      jsonPath: .spec.tasks
+      name: Tasks
+      type: integer
+    - jsonPath: .spec.profiling.enabled
+      name: Profiling
+      type: boolean
+    - jsonPath: .status.runCount
+      name: Runs
+      type: integer
+    - jsonPath: .status.lastRunMakespan
+      name: Last Makespan
+      type: number
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              defaults:
+                description: Fallback values for tasks that omit runtime/dataSize
+                  hints.
+                properties:
+                  dataSize:
+                    default: "0"
+                    description: Default expected output data size (e.g. "10MB").
+                    type: string
+                  resources:
+                    description: Default resource requests for tasks that omit them.
+                      Schedulers plan with a task's CPU request as its demand on a
+                      node, and the pod requests the same, so what is planned is what
+                      the kubelet admits. Without this or a task's own request, a
+                      task requests 1 CPU.
+                    properties:
+                      cpu:
+                        type: string
+                      memory:
+                        type: string
+                    type: object
+                  runtime:
+                    default: 10
+                    description: Default expected runtime in seconds.
+                    type: number
+                type: object
+              description:
+                description: Human-readable description of this DAG template.
+                type: string
+              durability:
+                description: 'Which objects the data agents fsync. auto (default):
+                  final outputs and cacheKey outputs; all; none; node: each agent''s
+                  --sync default.'
+                enum:
+                - auto
+                - all
+                - none
+                - node
+                type: string
+              profiling:
+                description: Controls runtime/data profiling across runs.
+                properties:
+                  bandwidthSource:
+                    default: external
+                    description: |
+                      How to resolve link bandwidth. "external" uses the wl-network-profile ConfigMap. "profiler" uses profiler-observed transfer rates. "hybrid" tries profiler first, then ConfigMap.
+                    enum:
+                    - external
+                    - profiler
+                    - hybrid
+                    type: string
+                  emaAlpha:
+                    default: 0.3
+                    description: EMA smoothing factor. Higher values weight recent
+                      observations more.
+                    maximum: 1
+                    minimum: 0
+                    type: number
+                  enabled:
+                    default: true
+                    description: Enable profiling of task runtimes and data sizes.
+                    type: boolean
+                  maxSamples:
+                    default: 100
+                    description: Maximum sample count to retain per profile entry.
+                    minimum: 1
+                    type: integer
+                  minSamples:
+                    default: 3
+                    description: Minimum profiler samples before data is trusted over
+                      spec hints.
+                    minimum: 1
+                    type: integer
+                  runtimeSource:
+                    default: profiler
+                    description: |
+                      How to resolve task runtimes. "manual" uses only spec hints. "profiler" uses profiler DB with spec hints as fallback. "hybrid" is the same as profiler (reserved for future weighted blending).
+                    enum:
+                    - manual
+                    - profiler
+                    - hybrid
+                    type: string
+                  warmupRuns:
+                    default: 0
+                    description: Number of initial runs to skip before recording profiles
+                      (cold-start effects).
+                    minimum: 0
+                    type: integer
+                type: object
+              retention:
+                description: Controls garbage collection of old run CRs and on-disk
+                  data.
+                properties:
+                  data:
+                    description: |
+                      Controls on-disk data retention on worker nodes (/data/wl-outputs). Policies compose: keepRuns evicts oldest beyond K, maxSizePerNode enforces a hard cap, deleteDelay defers cleanup.
+                    properties:
+                      deleteDelay:
+                        default: 0s
+                        description: |
+                          How long to wait after run completion before deleting data. Only effective when policy is "delayed" (e.g. "10m", "1h"). Parsed as a Go duration.
+                        type: string
+                      keepRuns:
+                        default: 3
+                        description: |
+                          Number of recent completed runs whose data to keep on each node. Only effective when policy is "keepLatest". 0 means keep none (equivalent to "immediate").
+                        minimum: 0
+                        type: integer
+                      maxSizePerNode:
+                        default: "0"
+                        description: |
+                          Hard cap on total data size per node for this template's runs (e.g. "2Gi", "500Mi"). Oldest run data is evicted first when the cap is exceeded. "0" means no size limit. Composable with any policy.
+                        type: string
+                      policy:
+                        default: keepLatest
+                        description: |
+                          "immediate" deletes run data as soon as the ODAG completes. "delayed" waits deleteDelay before cleanup. "keepLatest" keeps data from the last keepRuns completed runs. "none" disables automatic data cleanup (manual only).
+                        enum:
+                        - immediate
+                        - delayed
+                        - keepLatest
+                        - none
+                        type: string
+                    type: object
+                  maxRuns:
+                    default: 50
+                    description: Maximum number of completed ODAG runs to keep. Oldest
+                      are deleted first.
+                    minimum: 1
+                    type: integer
+                type: object
+              retryPolicy:
+                properties:
+                  maxRetries:
+                    default: 3
+                    minimum: 0
+                    type: integer
+                type: object
+              scheduler:
+                default: random
+                description: |
+                  Scheduler to use. Four forms: "random" / "heft" — compiled-in schedulers; "saga/<name>" — a built-in SAGA algorithm (heft, cpop, peft, minmin, maxmin, sufferage, ...); "saga/<dotted.path.ClassName>" — ANY importable saga.Scheduler subclass, so a scheduler developed and validated in simulation runs here unmodified (make it importable via WL_SAGA_PATH or WL_SAGA_EXTRA_PACKAGES on the sidecar); "http(s)://host:port" — any service implementing the scheduler contract, in any language. On failure of an external scheduler the controller falls back to the built-in HEFT scheduler.
+                type: string
+              schedulerConfig:
+                description: Tunable knobs for the scheduler.
+                properties:
+                  enactOrder:
+                    description: |
+                      How much of an external scheduler's schedule to enact. Default (none) enacts PLACEMENT ONLY: dispatch is data-readiness driven, so independent ready tasks on one node may run concurrently or out of the scheduler's order. "order" starts tasks on each node in the scheduler's predicted order; "serial" additionally runs one task at a time per node, the machine model classical DAG schedulers assume. Claims about reproducing a scheduling algorithm's behaviour require order or serial.
+                    enum:
+                    - ""
+                    - none
+                    - order
+                    - serial
+                    type: string
+                  nodeOrder:
+                    description: |
+                      Explicit per-node execution order {node: [task, ...]}, for replaying a frozen schedule without re-invoking a scheduler. Enacted like enactOrder (default serial).
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  options:
+                    description: |
+                      Free-form key/value options passed to an external scheduler as constructor keyword arguments (e.g. {alpha: 0.5}). Ignored by the built-in schedulers.
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  spreadEpsilon:
+                    default: 0
+                    description: |
+                      HEFT tie-breaking tolerance in seconds. Candidate nodes whose EFT is within spreadEpsilon of the minimum EFT are treated as tied, and the least-loaded node wins. 0 preserves strict HEFT (with least-loaded exact-tie break). Larger values trade a small predicted-makespan penalty for better spread and improved resilience to runtime noise / stragglers.
+                    minimum: 0
+                    type: number
+                type: object
+              tasks:
+                items:
+                  properties:
+                    args:
+                      items:
+                        type: string
+                      type: array
+                    cacheKey:
+                      description: 'Opt-in cross-run reuse. If a previous run produced
+                        this task''s output under the same key and the copy is still
+                        installed, the task does not execute: the controller pins
+                        it to the node holding the copy, aliases the bytes under this
+                        run''s name, and serves consumers from there. Requires a data
+                        retention policy that keeps run data (keepLatest/none).'
+                      type: string
+                    command:
+                      items:
+                        type: string
+                      type: array
+                    constraints:
+                      properties:
+                        nodeNames:
+                          description: If set, scheduler will only place this task
+                            on one of these nodes.
+                          items:
+                            type: string
+                          type: array
+                      type: object
+                    containerSecurityContext:
+                      description: |
+                        Container-level securityContext (privileged, capabilities, etc.). Applied verbatim as corev1.SecurityContext. Needed for device access: PodSecurityContext has no privileged field, and without a device plugin the container device cgroup denies /dev/dri access even with the render group.
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                    dataSize:
+                      description: Optional hint for expected output data size (e.g.
+                        "100MB"). Used by HEFT scheduler if no profiler data exists.
+                      type: string
+                    dependencies:
+                      default: []
+                      items:
+                        type: string
+                      type: array
+                    durable:
+                      description: 'Durability of the task''s default output, and
+                        the default for its named outputs. Unset: the run''s spec.durability
+                        decides.'
+                      type: boolean
+                    env:
+                      items:
+                        properties:
+                          name:
+                            type: string
+                          value:
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      type: array
+                    function:
+                      description: 'Function to call on the runner (default: the task
+                        name).'
+                      type: string
+                    image:
+                      type: string
+                    inputs:
+                      description: |
+                        Which named object of a producer this task consumes. Refines an entry in dependencies; producers listed in dependencies without an inputs entry supply their default output.
+                      items:
+                        properties:
+                          object:
+                            type: string
+                          producer:
+                            type: string
+                        required:
+                        - producer
+                        type: object
+                      type: array
+                    name:
+                      type: string
+                    outputs:
+                      description: |
+                        Named outputs. A task may emit several semantically distinct, immutable objects via send("<name>", data); each has identity <run, task, name> (data-plane key "task.name"), its own consumer set (see inputs), and an independently revisable realization. Omit for the single default output.
+                      items:
+                        properties:
+                          dataSize:
+                            type: string
+                          durable:
+                            description: 'Fsync this object on every node that holds
+                              it (it must survive a crash). Unset: the run''s spec.durability
+                              decides.'
+                            type: boolean
+                          name:
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      type: array
+                    resources:
+                      properties:
+                        cpu:
+                          type: string
+                        memory:
+                          type: string
+                      type: object
+                    runner:
+                      description: 'Execute this task on the named warm runner (pods
+                        labeled wl.io/runner=<name>) on its assigned node instead
+                        of in a fresh pod. Same contract: the invocation gets the
+                        pod''s environment and uses the same data-agent protocol.
+                        image names the runner''s image; command is ignored.'
+                      type: string
+                    runtime:
+                      description: Optional scalar hint for expected runtime in seconds.
+                        Used as fallback when runtimeProfile has no entry for a node.
+                      type: number
+                    runtimeProfile:
+                      description: |
+                        Per-node runtime hints in seconds. Keys are node names, values are expected runtimes. Example: {"anrg-3": 6, "anrg-8": 12}. Takes priority over the scalar runtime field. Profiler data (if available) takes priority over this.
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                    securityContext:
+                      description: |
+                        Pod-level securityContext (supplementalGroups, runAsUser, fsGroup, etc.). Applied verbatim as corev1.PodSecurityContext.
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                    type:
+                      description: 'Vertex kind in the physical DAG. "compute" (default)
+                        runs the task''s container. "data" holds/moves bytes with
+                        no pod: the controller realizes it through the data-agent
+                        (alias + push). A data vertex must have exactly one dependency
+                        and at least one successor.'
+                      enum:
+                      - compute
+                      - data
+                      type: string
+                    volumeMounts:
+                      description: |
+                        Container-level volume mounts appended to the controller's base mounts. Each item is a standard K8s corev1.VolumeMount. Names must match a declared volume (either user-defined or controller-owned).
+                      items:
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
+                      type: array
+                    volumes:
+                      description: |
+                        Pod-level volumes appended to the controller's base mounts (wl-outputs, wl-shared). Each item is a standard K8s corev1.Volume. Reserved names ("wl-outputs", "wl-shared") are rejected at parse time.
+                      items:
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
+                      type: array
+                  required:
+                  - name
+                  - image
+                  type: object
+                minItems: 1
+                type: array
+            required:
+            - tasks
+            type: object
+          status:
+            properties:
+              lastRunMakespan:
+                description: Makespan (seconds) of the most recent completed run.
+                type: number
+              lastRunName:
+                description: Name of the most recent ODAG run.
+                type: string
+              lastRunPhase:
+                description: Phase of the most recent run.
+                type: string
+              profileSummary:
+                description: |
+                  Condensed task-node runtime matrix from the profiler. Structure: { "taskName": { "nodeName": runtimeSeconds, ... }, ... }
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+              runCount:
+                description: Total number of runs triggered from this template.
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ODAGTemplate
+    listKind: ODAGTemplateList
+    plural: odagtemplates
+    shortNames:
+    - odagt
+    singular: odagtemplate
+  conditions:
+  - lastTransitionTime: "2026-10-21T23:32:33Z"
+    message: no conflicts found
+    reason: NoConflicts
+    status: "True"
+    type: NamesAccepted
+  - lastTransitionTime: "2026-10-21T23:32:33Z"
+    message: the initial names have been accepted
+    reason: InitialNamesAccepted
+    status: "True"
+    type: Established
+  storedVersions:
+  - v1

@@ -12,7 +12,7 @@
 #
 # Use the Wayline commit that is deployed on the cluster (testbed/k8s/README.md).
 # Requires BuildKit (docker >= 23 default) for --build-context.
-FROM python:3.11-slim
+FROM python:3.12.8-slim
 WORKDIR /app
 # The wl SDK imports pyzmq for its zeromq transport.
 RUN pip install --no-cache-dir pyzmq
