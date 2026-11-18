@@ -11,7 +11,7 @@ machines:
     cpu: AMD Threadripper PRO 7975WX
     cores: 32            # physical; 64 hardware threads (SMT 2)
     os: Ubuntu 24.04
-    speed: 1.0           # placeholder; not yet calibrated (see saga_exec.calibrate)
+    speed: 1.0           # calibrated: calibration.cpu.slurm (loaded, 2026-11-18)
     # Local links through the real data path (bytes/s), used when a run's
     # model.links is "measured". UNMEASURED PLACEHOLDERS (saga_exec.calibrate.links):
     self_bandwidth: 1.0e9    # same core: consecutive tasks (Wayline still moves data via its data agent)
@@ -21,7 +21,7 @@ machines:
     cpu: AMD EPYC 9354
     cores: 32
     os: Ubuntu 22.04
-    speed: 1.0           # placeholder; not yet calibrated
+    speed: 0.7734        # calibrated: calibration.cpu.slurm (loaded, 2026-11-18)
     self_bandwidth: 1.0e9    # UNMEASURED placeholder (see cse-lambda1)
     intra_bandwidth: 1.0e9   # UNMEASURED placeholder
     roles: [k8s-worker, slurm-worker]
@@ -77,3 +77,34 @@ network:
   # model.links is "measured"; 1e12 ("free") otherwise.
   # LEGACY only (students' core-node models; Wayline used 1e12, Slurm inf):
   local_bandwidth: .inf
+
+# BEGIN calibration (written by saga_exec.calibrate; do not edit by hand)
+calibration:
+  cpu:
+    slurm:
+      measured: '2026-11-18T06:52:56'
+      method: chained sha256 (task/fidelity_core.hash_loop) in task.pyz; single =
+        1 process on 1 core, loaded = 1 process per physical core of the allocation,
+        each pinned to its 2 threads
+      basis: loaded
+      reference: cse-lambda1
+      hash_rate: 5217596.5
+      speed:
+        cse-lambda1: 1.0
+        cse-isha: 0.7734
+      machines:
+        cse-lambda1:
+          single: 5334839.3
+          loaded: 5217596.5
+          loaded_min_process: 4834743.8
+          cores: 14
+          python: 3.12.8
+          openssl: OpenSSL 3.0.15 3 Sep 2024
+        cse-isha:
+          single: 3994604.5
+          loaded: 4035081.2
+          loaded_min_process: 3809794.3
+          cores: 14
+          python: 3.12.8
+          openssl: OpenSSL 3.0.15 3 Sep 2024
+# END calibration

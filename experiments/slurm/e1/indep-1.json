@@ -1,0 +1,8 @@
+{
+  "_note": "E1: compute fidelity under contention; cpu mode, speeds/hash_rate from machines.yaml calibration",
+  "instance": "graphs/e1-indep-1.json",
+  "scheduler": "heft",
+  "sec_per_cost": 1.0,
+  "mode": "cpu",
+  "transport": "direct"
+}

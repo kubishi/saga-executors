@@ -1,0 +1,21 @@
+{
+  "name": "e1-indep-14",
+  "source": "E1: n independent equal tasks (compute fidelity / contention)",
+  "tasks": {
+    "T00": 3.0,
+    "T01": 3.0,
+    "T02": 3.0,
+    "T03": 3.0,
+    "T04": 3.0,
+    "T05": 3.0,
+    "T06": 3.0,
+    "T07": 3.0,
+    "T08": 3.0,
+    "T09": 3.0,
+    "T10": 3.0,
+    "T11": 3.0,
+    "T12": 3.0,
+    "T13": 3.0
+  },
+  "edges": []
+}
